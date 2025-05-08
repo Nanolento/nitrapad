@@ -14,6 +14,7 @@ class State:
         self.win_height = 40
         self.win_width = 80
         self.buffer_lines = []
+        self.screen_dirty = True # will make it redraw on next cycle.
 
 
 def load_file(file_path):
@@ -31,11 +32,15 @@ def load_file(file_path):
         return None
 
 
-def draw_screen(stdscr, buffer_scr, state):
+def draw_screen(stdscr, state):
+    if len(state.buffer_lines) > state.win_height:
+        buffer_scr = state.buffer_lines[state.scroll_y:state.scroll_y+state.win_height-1]
+    else:
+        buffer_scr = state.buffer_lines
     stdscr.clear()
     cur_y = 0
     cur_x = 0
-    assert len(buffer_scr) <= curses.LINES - 1, "Too many lines were given to draw"
+    assert len(buffer_scr) <= state.win_height - 1, "Too many lines were given to draw"
         
     for line in buffer_scr:
         cur_x = 0
@@ -44,7 +49,7 @@ def draw_screen(stdscr, buffer_scr, state):
                 cur_x += TAB_WIDTH
                 continue
             if cur_x < state.win_width:
-                stdscr.addch(state.scroll_y+cur_y, cur_x, char)
+                stdscr.addch(cur_y, cur_x, char)
                 cur_x += 1
             else:
                 break
@@ -58,11 +63,17 @@ def handle_input(statusw, stdscr, state):
             key_str = "arrow_down"
             if state.cur_y < state.win_height - 2:
                 state.cur_y += 1
+            elif state.scroll_y < len(state.buffer_lines) - state.win_height:
+                state.scroll_y += 1
+                state.screen_dirty = True
             stdscr.move(state.cur_y, state.cur_x)
         case 259:
             key_str = "arrow_up"
             if state.cur_y > 0:
                 state.cur_y -= 1
+            elif state.scroll_y > 0:
+                state.scroll_y -= 1
+                state.screen_dirty = True
             stdscr.move(state.cur_y, state.cur_x)
         case 260:
             key_str = "arrow_left"
@@ -87,12 +98,11 @@ def main_loop(stdscr, state):
     curses.use_default_colors()
     ypos = 0
     statusw = stdscr.subwin(1, state.win_width, state.win_height-1, 0)
-    if len(state.buffer_lines) > state.win_height:
-        draw_screen(stdscr, state.buffer_lines[state.scroll_y:state.scroll_y+state.win_height-1], state)
-    else:
-        draw_screen(stdscr, state.buffer_lines, state)
     while True:
-        stdscr.refresh()
+        if state.screen_dirty:
+            state.screen_dirty = False
+            draw_screen(stdscr, state)
+            stdscr.refresh()
         handle_input(statusw, stdscr, state)
 
 
