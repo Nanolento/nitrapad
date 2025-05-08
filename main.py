@@ -13,6 +13,8 @@ class State:
         self.scroll_y = 0
         self.win_height = 40
         self.win_width = 80
+        self.editor_height = 39
+        self.editor_width = 80
         self.buffer_lines = []
         self.screen_dirty = True # will make it redraw on next cycle.
 
@@ -48,14 +50,14 @@ def _debug_info(state):
     
 
 def draw_screen(screen, state):
-    if len(state.buffer_lines) > state.win_height - 1:
-        buffer_scr = state.buffer_lines[state.scroll_y:state.scroll_y+state.win_height-1]
+    if len(state.buffer_lines) > state.editor_height:
+        buffer_scr = state.buffer_lines[state.scroll_y:state.scroll_y+state.editor_height]
     else:
         buffer_scr = state.buffer_lines
     screen.clear()
     cur_y = 0
     cur_x = 0
-    assert len(buffer_scr) <= state.win_height - 1, "Too many lines were given to draw"
+    assert len(buffer_scr) <= state.editor_height, "Too many lines were given to draw"
         
     for line in buffer_scr:
         cur_x = 0
@@ -63,11 +65,11 @@ def draw_screen(screen, state):
             if ord(char) == 9:
                 cur_x += 1
                 continue
-            if cur_x < state.win_width and cur_y < state.win_height - 1:
+            if cur_x < state.editor_width and cur_y < state.editor_height:
                 try:
                     screen.addch(cur_y, cur_x, char)
                 except curses.error as e:
-                    if cur_x != state.win_width - 1 or cur_y != state.win_height - 2:
+                    if cur_x != state.editor_width - 1 or cur_y != state.editor_height - 1:
                         # raise an exception only if the cur pos is irregular
                         # ncurses raises exception if drawing to bottom right corner for some reason.
                         raise Exception(f"could not draw char {repr(char)}: {e}\nDEBUG INFO:\n{_debug_info(state)}")
@@ -83,9 +85,9 @@ def handle_input(statusw, stdscr, state):
     match key_ch:
         case 258:
             key_str = "arrow_down"
-            if state.cur_y < state.win_height - 2:
+            if state.cur_y < state.editor_height - 1:
                 state.cur_y += 1
-            elif state.scroll_y < len(state.buffer_lines) - state.win_height:
+            elif state.scroll_y < len(state.buffer_lines) - state.editor_height:
                 state.scroll_y += 1
                 state.screen_dirty = True
             stdscr.move(state.cur_y, state.cur_x)
@@ -104,7 +106,7 @@ def handle_input(statusw, stdscr, state):
             stdscr.move(state.cur_y, state.cur_x)
         case 261:
             key_str = "arrow_right"
-            if state.cur_x < state.win_width - 1:
+            if state.cur_x < state.editor_width - 1:
                 state.cur_x += 1
             stdscr.move(state.cur_y, state.cur_x)
         case _:
@@ -119,8 +121,10 @@ def handle_input(statusw, stdscr, state):
 def main_loop(stdscr, state):
     curses.use_default_colors()
     stdscr.clear()
-    statusw = stdscr.subwin(1, state.win_width, state.win_height-1, 0)
-    textw = stdscr.subwin(state.win_height - 1, state.win_width, 0, 0)
+    state.editor_width = state.win_width
+    state.editor_height = state.win_height - 1
+    statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
+    textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
     while True:
         if state.screen_dirty:
             state.screen_dirty = False
