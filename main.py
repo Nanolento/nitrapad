@@ -9,6 +9,7 @@ class State:
     def __init__(self):
         self.cur_x = 0
         self.cur_y = 0
+        self.preferred_cur_x = 0 # Remember x value for convenient cursor movement
         self.scroll_x = 0 # Horizontal scrolling unimplemented for now.
         self.scroll_y = 0
         self.win_height = 40
@@ -80,6 +81,18 @@ def draw_screen(screen, state):
     screen.refresh()
 
 
+def cursor_wrap_text(state):
+    """
+    This function moves the cursor so that it is always in valid text. (horizontally)
+    """
+    current_line = state.buffer_lines[state.scroll_y+state.cur_y]
+    if state.cur_x > len(current_line) - 1 or \
+       state.preferred_cur_x > len(current_line) - 1:
+        state.cur_x = len(current_line) - 1 # Move to end of line
+    else:
+        state.cur_x = state.preferred_cur_x
+
+
 def handle_input(statusw, stdscr, state):
     key_ch = stdscr.get_wch()
     match key_ch:
@@ -87,6 +100,7 @@ def handle_input(statusw, stdscr, state):
             key_str = "arrow_down"
             if state.cur_y < state.editor_height - 1:
                 state.cur_y += 1
+                cursor_wrap_text(state)
             elif state.scroll_y < len(state.buffer_lines) - state.editor_height:
                 state.scroll_y += 1
                 state.screen_dirty = True
@@ -95,6 +109,7 @@ def handle_input(statusw, stdscr, state):
             key_str = "arrow_up"
             if state.cur_y > 0:
                 state.cur_y -= 1
+                cursor_wrap_text(state)
             elif state.scroll_y > 0:
                 state.scroll_y -= 1
                 state.screen_dirty = True
@@ -103,16 +118,20 @@ def handle_input(statusw, stdscr, state):
             key_str = "arrow_left"
             if state.cur_x > 0:
                 state.cur_x -= 1
+                state.preferred_cur_x = state.cur_x
+                cursor_wrap_text(state)
             stdscr.move(state.cur_y, state.cur_x)
         case 261:
             key_str = "arrow_right"
             if state.cur_x < state.editor_width - 1:
                 state.cur_x += 1
+                state.preferred_cur_x = state.cur_x
+                cursor_wrap_text(state)
             stdscr.move(state.cur_y, state.cur_x)
         case _:
             key_str = f"UNK {repr(key_ch)}"
     statusw.clear()
-    status_str = f"X: {state.cur_x+state.scroll_x} ({state.cur_x}), " + \
+    status_str = f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
                  f"Y: {state.cur_y+state.scroll_y} ({state.cur_y}), INPUT: {key_str}"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
