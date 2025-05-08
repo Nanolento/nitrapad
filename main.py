@@ -1,5 +1,4 @@
 import curses
-from time import sleep
 import sys
 import os
 
@@ -18,6 +17,8 @@ class State:
         self.editor_width = 80
         self.buffer_lines = []
         self.screen_dirty = True # will make it redraw on next cycle.
+        self.file_path = "*NEW*"
+        self.filename = "*NEW*" # only basename, displayed in status line etc.
 
 
 def load_file(file_path):
@@ -141,8 +142,9 @@ def handle_input(statusw, stdscr, state):
         case _:
             key_str = f"UNK {repr(key_ch)}"
     statusw.clear()
-    status_str = f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
-                 f"Y: {state.cur_y+state.scroll_y} ({state.cur_y}), INPUT: {key_str}"
+    status_str = f"FILE: {state.filename}, " + \
+                 f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
+                 f"Y: {state.cur_y+state.scroll_y+1} ({state.cur_y}), INPUT: {key_str}"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
 
@@ -165,6 +167,8 @@ def main():
     state = State()
     if len(sys.argv) == 2:
         state.buffer_lines = load_file(sys.argv[1])
+        state.file_path = sys.argv[1]
+        state.filename = os.path.basename(state.file_path)
         if not state.buffer_lines:
             print("Could not load file!")
             return
