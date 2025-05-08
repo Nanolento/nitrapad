@@ -106,7 +106,37 @@ def cursor_wrap_text(state):
         state.cur_x = state.preferred_cur_x
 
 
-def handle_input(statusw, stdscr, state):
+def draw_line(state, text_y, screen_y, screen):
+    cur_x = 0
+    line = state.buffer_lines[text_y]
+    for char in line.rstrip():
+        if ord(char) == 9:
+            cur_x += 1
+            continue
+        if cur_x < state.editor_width and screen_y < state.editor_height:
+            try:
+                screen.addch(screen_y, cur_x, char)
+            except curses.error as e:
+                if cur_x != state.editor_width - 1 or screen_y != state.editor_height - 1:
+                    # raise an exception only if the cur pos is irregular
+                    # ncurses raises exception if drawing to bottom right corner for some reason.
+                    raise Exception(f"could not draw char {repr(char)}: {e}\nDEBUG INFO:\n{_debug_info(state)}")
+            cur_x += 1
+        else:
+            break
+
+
+def insert_char(state, x, y, char, textw):
+    """
+    Inserts the given character into the buffer at the given position.
+    Will also update the screen if needed.
+    """
+    state.buffer_lines[y] = state.buffer_lines[y][:x] + char + state.buffer_lines[y][x:]
+    draw_line(state, y, y-state.scroll_y, textw)
+    textw.refresh()
+
+
+def handle_input(statusw, stdscr, state, textw):
     try:
         key_ch = stdscr.get_wch()
         match state.mode:
@@ -147,6 +177,12 @@ def handle_input(statusw, stdscr, state):
                     case c if c == chr(24):
                         key_str = "ctrl+x"
                         state.mode = "command"
+                    case c if (c >= chr(65) and c <= chr(90)) or \
+                         (c >= chr(97) and c <= chr(122)):
+                        key_str = c  # a letter was input.
+                        insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
+                        state.cur_x += 1
+                        state.preferred_cur_x = state.cur_x
                     case _:
                         key_str = f"UNK {repr(key_ch)}"
             case "command":
@@ -157,6 +193,7 @@ def handle_input(statusw, stdscr, state):
                         state.ending = True
                     case _:
                         state.mode = "normal"
+                        key_str = f"UNK {repr(key_ch)}"
     except (KeyboardInterrupt, curses.error):
         key_str = "ctrl+c"
     
@@ -169,6 +206,8 @@ def handle_input(statusw, stdscr, state):
         status_str = "To quit Nitra, press Ctrl+x, then q"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
+    # move cursor back to avoid confusing user
+    stdscr.move(state.cur_y, state.cur_x)
 
     
 def main_loop(stdscr, state):
@@ -186,7 +225,7 @@ def main_loop(stdscr, state):
         if state.screen_dirty:
             state.screen_dirty = False
             draw_screen(textw, state)
-        handle_input(statusw, stdscr, state)
+        handle_input(statusw, stdscr, state, textw)
 
 
 def main():
