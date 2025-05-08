@@ -32,12 +32,27 @@ def load_file(file_path):
         return None
 
 
-def draw_screen(stdscr, state):
-    if len(state.buffer_lines) > state.win_height:
+def _debug_info(state):
+    try:
+        debug_str = f"""
+        Current line: {state.buffer_lines[state.scroll_y+state.cur_y].rstrip()}
+        Current line length: {len(state.buffer_lines[state.scroll_y+state.cur_y])}
+        Cursor X/Y: {state.cur_x}/{state.cur_y}
+        Scroll X/Y: {state.scroll_x}/{state.scroll_y}
+        Absolute X/Y: {state.scroll_x + state.cur_x}/{state.scroll_y + state.cur_y}
+        File line count: {len(state.buffer_lines)}
+        """
+    except:
+        debug_str = "Could not make debug info. Something's wrong!"
+    return debug_str
+    
+
+def draw_screen(screen, state):
+    if len(state.buffer_lines) > state.win_height - 1:
         buffer_scr = state.buffer_lines[state.scroll_y:state.scroll_y+state.win_height-1]
     else:
         buffer_scr = state.buffer_lines
-    stdscr.clear()
+    screen.clear()
     cur_y = 0
     cur_x = 0
     assert len(buffer_scr) <= state.win_height - 1, "Too many lines were given to draw"
@@ -46,14 +61,21 @@ def draw_screen(stdscr, state):
         cur_x = 0
         for char in line.rstrip():
             if ord(char) == 9:
-                cur_x += TAB_WIDTH
+                cur_x += 1
                 continue
-            if cur_x < state.win_width:
-                stdscr.addch(cur_y, cur_x, char)
+            if cur_x < state.win_width and cur_y < state.win_height - 1:
+                try:
+                    screen.addch(cur_y, cur_x, char)
+                except curses.error as e:
+                    if cur_x != state.win_width - 1 or cur_y != state.win_height - 2:
+                        # raise an exception only if the cur pos is irregular
+                        # ncurses raises exception if drawing to bottom right corner for some reason.
+                        raise Exception(f"could not draw char {repr(char)}: {e}\nDEBUG INFO:\n{_debug_info(state)}")
                 cur_x += 1
             else:
                 break
         cur_y += 1
+    screen.refresh()
 
 
 def handle_input(statusw, stdscr, state):
@@ -96,13 +118,13 @@ def handle_input(statusw, stdscr, state):
     
 def main_loop(stdscr, state):
     curses.use_default_colors()
-    ypos = 0
+    stdscr.clear()
     statusw = stdscr.subwin(1, state.win_width, state.win_height-1, 0)
+    textw = stdscr.subwin(state.win_height - 1, state.win_width, 0, 0)
     while True:
         if state.screen_dirty:
             state.screen_dirty = False
-            draw_screen(stdscr, state)
-            stdscr.refresh()
+            draw_screen(textw, state)
         handle_input(statusw, stdscr, state)
 
 
