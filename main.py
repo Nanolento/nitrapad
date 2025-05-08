@@ -68,13 +68,10 @@ def main_loop(stdscr, buffer_lines):
     state = State()
     ypos = 0
     statusw = stdscr.subwin(1, curses.COLS, curses.LINES-1, 0)
-    draw_screen(stdscr, buffer_lines[ypos:ypos+curses.LINES-1], state)
+    draw_screen(stdscr, buffer_lines[state.scroll_y:state.scroll_y+curses.LINES-1], state)
     while True:
-        
         stdscr.refresh()
         handle_input(statusw, stdscr)
-
-        
 
 
 def main():
