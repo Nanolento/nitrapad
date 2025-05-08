@@ -85,7 +85,17 @@ def cursor_wrap_text(state):
     """
     This function moves the cursor so that it is always in valid text. (horizontally)
     """
-    current_line = state.buffer_lines[state.scroll_y+state.cur_y]
+    # Vertical cursor movement
+    # Basically make it not go below where text ends in small files, or
+    # when scrolling too far.
+    if state.scroll_y + state.cur_y >= len(state.buffer_lines):
+        state.cur_y = max(0, len(state.buffer_lines) - 1)
+    # Get current line for horizontal movement check.
+    if len(state.buffer_lines) > 0:
+        current_line = state.buffer_lines[state.scroll_y+state.cur_y]
+    else:
+        return # nothing to do if no text.
+    # Horizontal cursor movement
     if state.cur_x > len(current_line) - 1 or \
        state.preferred_cur_x > len(current_line) - 1:
         state.cur_x = len(current_line) - 1 # Move to end of line
