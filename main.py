@@ -11,8 +11,9 @@ class State:
         self.cur_y = 0
         self.scroll_x = 0 # Horizontal scrolling unimplemented for now.
         self.scroll_y = 0
-        self.win_height = curses.LINES-1
-        self.win_width = curses.COLS
+        self.win_height = 40
+        self.win_width = 80
+        self.buffer_lines = []
 
 
 def load_file(file_path):
@@ -42,8 +43,11 @@ def draw_screen(stdscr, buffer_scr, state):
             if ord(char) == 9:
                 cur_x += TAB_WIDTH
                 continue
-            stdscr.addch(state.scroll_y+cur_y, cur_x, char)
-            cur_x += 1
+            if cur_x < state.win_width:
+                stdscr.addch(state.scroll_y+cur_y, cur_x, char)
+                cur_x += 1
+            else:
+                break
         cur_y += 1
 
 
@@ -52,7 +56,7 @@ def handle_input(statusw, stdscr, state):
     match key_ch:
         case 258:
             key_str = "arrow_down"
-            if state.cur_y < state.win_height - 1:
+            if state.cur_y < state.win_height - 2:
                 state.cur_y += 1
             stdscr.move(state.cur_y, state.cur_x)
         case 259:
@@ -79,30 +83,28 @@ def handle_input(statusw, stdscr, state):
     statusw.refresh()
 
     
-def main_loop(stdscr, buffer_lines):
+def main_loop(stdscr, state):
     curses.use_default_colors()
-    state = State()
     ypos = 0
-    statusw = stdscr.subwin(1, curses.COLS, curses.LINES-1, 0)
-    if len(buffer_lines) > state.win_height:
-        draw_screen(stdscr, buffer_lines[state.scroll_y:state.scroll_y+curses.LINES-1], state)
+    statusw = stdscr.subwin(1, state.win_width, state.win_height-1, 0)
+    if len(state.buffer_lines) > state.win_height:
+        draw_screen(stdscr, state.buffer_lines[state.scroll_y:state.scroll_y+state.win_height-1], state)
     else:
-        draw_screen(stdscr, buffer_lines, state)
+        draw_screen(stdscr, state.buffer_lines, state)
     while True:
         stdscr.refresh()
         handle_input(statusw, stdscr, state)
 
 
 def main():
-    if len(sys.argv) < 2:
-        buffer_lines = []
-    else:
-        buffer_lines = load_file(sys.argv[1])
-        if not buffer_lines:
+    state = State()
+    if len(sys.argv) == 2:
+        state.buffer_lines = load_file(sys.argv[1])
+        if not state.buffer_lines:
             print("Could not load file!")
             return
 
-    curses.wrapper(main_loop, buffer_lines)
+    curses.wrapper(main_loop, state)
     
     
 if __name__ == "__main__":
