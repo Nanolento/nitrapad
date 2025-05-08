@@ -19,6 +19,8 @@ class State:
         self.screen_dirty = True # will make it redraw on next cycle.
         self.file_path = "*NEW*"
         self.filename = "*NEW*" # only basename, displayed in status line etc.
+        self.mode = "normal" # mode for interpreting input
+        self.ending = False # whether to quit the application yet.
 
 
 def load_file(file_path):
@@ -105,46 +107,66 @@ def cursor_wrap_text(state):
 
 
 def handle_input(statusw, stdscr, state):
-    key_ch = stdscr.get_wch()
-    match key_ch:
-        case 258:
-            key_str = "arrow_down"
-            if state.cur_y < state.editor_height - 1:
-                state.cur_y += 1
-                cursor_wrap_text(state)
-            elif state.scroll_y < len(state.buffer_lines) - state.editor_height:
-                state.scroll_y += 1
-                state.screen_dirty = True
-            stdscr.move(state.cur_y, state.cur_x)
-        case 259:
-            key_str = "arrow_up"
-            if state.cur_y > 0:
-                state.cur_y -= 1
-                cursor_wrap_text(state)
-            elif state.scroll_y > 0:
-                state.scroll_y -= 1
-                state.screen_dirty = True
-            stdscr.move(state.cur_y, state.cur_x)
-        case 260:
-            key_str = "arrow_left"
-            if state.cur_x > 0:
-                state.cur_x -= 1
-                state.preferred_cur_x = state.cur_x
-                cursor_wrap_text(state)
-            stdscr.move(state.cur_y, state.cur_x)
-        case 261:
-            key_str = "arrow_right"
-            if state.cur_x < state.editor_width - 1:
-                state.cur_x += 1
-                state.preferred_cur_x = state.cur_x
-                cursor_wrap_text(state)
-            stdscr.move(state.cur_y, state.cur_x)
-        case _:
-            key_str = f"UNK {repr(key_ch)}"
+    try:
+        key_ch = stdscr.get_wch()
+        match state.mode:
+            case "normal":
+                match key_ch:
+                    case 258:
+                        key_str = "arrow_down"
+                        if state.cur_y < state.editor_height - 1:
+                            state.cur_y += 1
+                            cursor_wrap_text(state)
+                        elif state.scroll_y < len(state.buffer_lines) - state.editor_height:
+                            state.scroll_y += 1
+                            state.screen_dirty = True
+                        stdscr.move(state.cur_y, state.cur_x)
+                    case 259:
+                        key_str = "arrow_up"
+                        if state.cur_y > 0:
+                            state.cur_y -= 1
+                            cursor_wrap_text(state)
+                        elif state.scroll_y > 0:
+                            state.scroll_y -= 1
+                            state.screen_dirty = True
+                        stdscr.move(state.cur_y, state.cur_x)
+                    case 260:
+                        key_str = "arrow_left"
+                        if state.cur_x > 0:
+                            state.cur_x -= 1
+                            state.preferred_cur_x = state.cur_x
+                            cursor_wrap_text(state)
+                        stdscr.move(state.cur_y, state.cur_x)
+                    case 261:
+                        key_str = "arrow_right"
+                        if state.cur_x < state.editor_width - 1:
+                            state.cur_x += 1
+                            state.preferred_cur_x = state.cur_x
+                            cursor_wrap_text(state)
+                        stdscr.move(state.cur_y, state.cur_x)
+                    case c if c == chr(24):
+                        key_str = "ctrl+x"
+                        state.mode = "command"
+                    case _:
+                        key_str = f"UNK {repr(key_ch)}"
+            case "command":
+                match key_ch:
+                    case 'q':
+                        key_str = "q"
+                        # exit application.
+                        state.ending = True
+                    case _:
+                        state.mode = "normal"
+    except (KeyboardInterrupt, curses.error):
+        key_str = "ctrl+c"
+    
     statusw.clear()
-    status_str = f"FILE: {state.filename}, " + \
-                 f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
-                 f"Y: {state.cur_y+state.scroll_y+1} ({state.cur_y}), INPUT: {key_str}"
+    if key_str != "ctrl+c":
+        status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
+            f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
+            f"Y: {state.cur_y+state.scroll_y+1} ({state.cur_y}), INPUT: {key_str}"
+    else:
+        status_str = "To quit Nitra, press Ctrl+x, then q"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
 
@@ -152,11 +174,15 @@ def handle_input(statusw, stdscr, state):
 def main_loop(stdscr, state):
     curses.use_default_colors()
     stdscr.clear()
+    state.win_width = curses.COLS
+    state.win_height = curses.LINES
     state.editor_width = state.win_width
     state.editor_height = state.win_height - 1
     statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
     textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
     while True:
+        if state.ending:
+            return
         if state.screen_dirty:
             state.screen_dirty = False
             draw_screen(textw, state)
