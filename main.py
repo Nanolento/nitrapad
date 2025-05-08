@@ -4,23 +4,24 @@ import os
 
 TAB_WIDTH = 4
 
+
 class State:
     def __init__(self):
         self.cur_x = 0
         self.cur_y = 0
-        self.preferred_cur_x = 0 # Remember x value for convenient cursor movement
-        self.scroll_x = 0 # Horizontal scrolling unimplemented for now.
+        self.preferred_cur_x = 0  # Remember x value for convenient cursor movement
+        self.scroll_x = 0  # Horizontal scrolling unimplemented for now.
         self.scroll_y = 0
         self.win_height = 40
         self.win_width = 80
         self.editor_height = 39
         self.editor_width = 80
         self.buffer_lines = []
-        self.screen_dirty = True # will make it redraw on next cycle.
+        self.screen_dirty = True  # will make it redraw on next cycle.
         self.file_path = "*NEW*"
-        self.filename = "*NEW*" # only basename, displayed in status line etc.
-        self.mode = "normal" # mode for interpreting input
-        self.ending = False # whether to quit the application yet.
+        self.filename = "*NEW*"  # only basename, displayed in status line etc.
+        self.mode = "normal"  # mode for interpreting input
+        self.ending = False  # whether to quit the application yet.
 
 
 def load_file(file_path):
@@ -48,10 +49,10 @@ def _debug_info(state):
         Absolute X/Y: {state.scroll_x + state.cur_x}/{state.scroll_y + state.cur_y}
         File line count: {len(state.buffer_lines)}
         """
-    except:
+    except Exception:
         debug_str = "Could not make debug info. Something's wrong!"
     return debug_str
-    
+
 
 def draw_screen(screen, state):
     if len(state.buffer_lines) > state.editor_height:
@@ -62,12 +63,12 @@ def draw_screen(screen, state):
     cur_y = 0
     cur_x = 0
     assert len(buffer_scr) <= state.editor_height, "Too many lines were given to draw"
-        
+
     for line in buffer_scr:
         cur_x = 0
         for char in line.rstrip():
             if ord(char) == 9:
-                cur_x += 1
+                cur_x += TAB_WIDTH
                 continue
             if cur_x < state.editor_width and cur_y < state.editor_height:
                 try:
@@ -97,11 +98,11 @@ def cursor_wrap_text(state):
     if len(state.buffer_lines) > 0:
         current_line = state.buffer_lines[state.scroll_y+state.cur_y]
     else:
-        return # nothing to do if no text.
+        return  # nothing to do if no text.
     # Horizontal cursor movement
     if state.cur_x > len(current_line) - 1 or \
        state.preferred_cur_x > len(current_line) - 1:
-        state.cur_x = len(current_line) - 1 # Move to end of line
+        state.cur_x = len(current_line) - 1  # Move to end of line
     else:
         state.cur_x = state.preferred_cur_x
 
@@ -178,7 +179,7 @@ def handle_input(statusw, stdscr, state, textw):
                         key_str = "ctrl+x"
                         state.mode = "command"
                     case c if (c >= chr(65) and c <= chr(90)) or \
-                         (c >= chr(97) and c <= chr(122)):
+                              (c >= chr(97) and c <= chr(122)):
                         key_str = c  # a letter was input.
                         insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
                         state.cur_x += 1
@@ -196,7 +197,7 @@ def handle_input(statusw, stdscr, state, textw):
                         key_str = f"UNK {repr(key_ch)}"
     except (KeyboardInterrupt, curses.error):
         key_str = "ctrl+c"
-    
+
     statusw.clear()
     if key_str != "ctrl+c":
         status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
@@ -209,7 +210,7 @@ def handle_input(statusw, stdscr, state, textw):
     # move cursor back to avoid confusing user
     stdscr.move(state.cur_y, state.cur_x)
 
-    
+
 def main_loop(stdscr, state):
     curses.use_default_colors()
     stdscr.clear()
@@ -239,8 +240,7 @@ def main():
             return
 
     curses.wrapper(main_loop, state)
-    
-    
+
+
 if __name__ == "__main__":
     main()
-
