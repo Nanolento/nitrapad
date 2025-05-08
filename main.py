@@ -11,6 +11,8 @@ class State:
         self.cur_y = 0
         self.scroll_x = 0 # Horizontal scrolling unimplemented for now.
         self.scroll_y = 0
+        self.win_height = curses.LINES-1
+        self.win_width = curses.COLS
 
 
 def load_file(file_path):
@@ -45,21 +47,35 @@ def draw_screen(stdscr, buffer_scr, state):
         cur_y += 1
 
 
-def handle_input(statusw, stdscr):
-    key_ch = stdscr.getch()
+def handle_input(statusw, stdscr, state):
+    key_ch = stdscr.get_wch()
     match key_ch:
         case 258:
             key_str = "arrow_down"
+            if state.cur_y < state.win_height - 1:
+                state.cur_y += 1
+            stdscr.move(state.cur_y, state.cur_x)
         case 259:
             key_str = "arrow_up"
+            if state.cur_y > 0:
+                state.cur_y -= 1
+            stdscr.move(state.cur_y, state.cur_x)
         case 260:
             key_str = "arrow_left"
+            if state.cur_x > 0:
+                state.cur_x -= 1
+            stdscr.move(state.cur_y, state.cur_x)
         case 261:
             key_str = "arrow_right"
+            if state.cur_x < state.win_width - 1:
+                state.cur_x += 1
+            stdscr.move(state.cur_y, state.cur_x)
         case _:
-            key_str = f"UNK {str(key_ch)}"
+            key_str = f"UNK {repr(key_ch)}"
     statusw.clear()
-    statusw.addstr(0, 0, key_str)
+    status_str = f"X: {state.cur_x+state.scroll_x} ({state.cur_x}), " + \
+                 f"Y: {state.cur_y+state.scroll_y} ({state.cur_y}), INPUT: {key_str}"
+    statusw.addstr(0, 0, status_str)
     statusw.refresh()
 
     
@@ -68,10 +84,13 @@ def main_loop(stdscr, buffer_lines):
     state = State()
     ypos = 0
     statusw = stdscr.subwin(1, curses.COLS, curses.LINES-1, 0)
-    draw_screen(stdscr, buffer_lines[state.scroll_y:state.scroll_y+curses.LINES-1], state)
+    if len(buffer_lines) > state.win_height:
+        draw_screen(stdscr, buffer_lines[state.scroll_y:state.scroll_y+curses.LINES-1], state)
+    else:
+        draw_screen(stdscr, buffer_lines, state)
     while True:
         stdscr.refresh()
-        handle_input(statusw, stdscr)
+        handle_input(statusw, stdscr, state)
 
 
 def main():
