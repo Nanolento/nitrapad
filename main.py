@@ -143,6 +143,19 @@ def handle_input(statusw, stdscr, state, textw):
         match state.mode:
             case "normal":
                 match key_ch:
+                    case c if isinstance(c, str):
+                        # Character typed.
+                        if c == chr(24):
+                            key_str = "ctrl+x"
+                            state.mode = "command"
+                        elif c == chr(10):
+                            key_str = "enter"
+                            # do nothing
+                        else:
+                            key_str = c  # a letter was input.
+                            insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
+                            state.cur_x += 1
+                            state.preferred_cur_x = state.cur_x
                     case 258:
                         key_str = "arrow_down"
                         if state.cur_y < state.editor_height - 1:
@@ -175,15 +188,6 @@ def handle_input(statusw, stdscr, state, textw):
                             state.preferred_cur_x = state.cur_x
                             cursor_wrap_text(state)
                         stdscr.move(state.cur_y, state.cur_x)
-                    case c if c == chr(24):
-                        key_str = "ctrl+x"
-                        state.mode = "command"
-                    case c if (c >= chr(65) and c <= chr(90)) or \
-                              (c >= chr(97) and c <= chr(122)):
-                        key_str = c  # a letter was input.
-                        insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
-                        state.cur_x += 1
-                        state.preferred_cur_x = state.cur_x
                     case _:
                         key_str = f"UNK {repr(key_ch)}"
             case "command":
@@ -199,12 +203,14 @@ def handle_input(statusw, stdscr, state, textw):
         key_str = "ctrl+c"
 
     statusw.clear()
-    if key_str != "ctrl+c":
+    if key_str == "enter":
+        status_str = "Currently, ENTER and newlines are unsupported. Coming soon!"
+    elif key_str == "ctrl+c":
+        status_str = "To quit Nitra, press Ctrl+x, then q"
+    else:
         status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
             f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
             f"Y: {state.cur_y+state.scroll_y+1} ({state.cur_y}), INPUT: {key_str}"
-    else:
-        status_str = "To quit Nitra, press Ctrl+x, then q"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
     # move cursor back to avoid confusing user
