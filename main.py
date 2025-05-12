@@ -82,7 +82,7 @@ def draw_screen(screen, state):
             else:
                 break
         cur_y += 1
-    screen.refresh()
+    curses.doupdate()
 
 
 def cursor_wrap_text(state):
@@ -134,7 +134,7 @@ def insert_char(state, x, y, char, textw):
     """
     state.buffer_lines[y] = state.buffer_lines[y][:x] + char + state.buffer_lines[y][x:]
     draw_line(state, y, y-state.scroll_y, textw)
-    textw.refresh()
+    textw.noutrefresh()
 
 
 def handle_input(statusw, stdscr, state, textw):
@@ -232,6 +232,7 @@ def main_loop(stdscr, state):
         if state.screen_dirty:
             state.screen_dirty = False
             draw_screen(textw, state)
+            curses.doupdate()
         handle_input(statusw, stdscr, state, textw)
 
 
