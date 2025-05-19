@@ -110,6 +110,8 @@ def cursor_wrap_text(state):
 def draw_line(state, text_y, screen_y, screen):
     cur_x = 0
     line = state.buffer_lines[text_y]
+    screen.move(screen_y, 0)
+    screen.clrtoeol()
     for char in line.rstrip():
         if ord(char) == 9:
             cur_x += 1
@@ -133,6 +135,15 @@ def insert_char(state, x, y, char, textw):
     Will also update the screen if needed.
     """
     state.buffer_lines[y] = state.buffer_lines[y][:x] + char + state.buffer_lines[y][x:]
+    draw_line(state, y, y-state.scroll_y, textw)
+    textw.noutrefresh()
+
+
+def delete_char(state, x, y, textw):
+    """
+    Delete the char at the given position.
+    """
+    state.buffer_lines[y] = state.buffer_lines[y][:x] + state.buffer_lines[y][x+1:]
     draw_line(state, y, y-state.scroll_y, textw)
     textw.noutrefresh()
 
@@ -198,6 +209,17 @@ def handle_input(statusw, stdscr, state, textw):
                             state.preferred_cur_x = state.cur_x
                             cursor_wrap_text(state)
                         stdscr.move(state.cur_y, state.cur_x)
+                    case 263:
+                        key_str = "backspace"
+                        if state.cur_x > 0:
+                            state.cur_x -= 1
+                            state.preferred_cur_x = state.cur_x
+                            delete_char(state, state.cur_x, state.scroll_y+state.cur_y, textw)
+                    case 330:
+                        key_str = "del"
+                        y_pos = state.scroll_y + state.cur_y
+                        if len(state.buffer_lines[y_pos]) > 0:
+                            delete_char(state, state.cur_x, y_pos, textw)
                     case _:
                         key_str = f"UNK {repr(key_ch)}"
             case "command":
