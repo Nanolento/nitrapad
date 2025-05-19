@@ -151,6 +151,16 @@ def handle_input(statusw, stdscr, state, textw):
                         elif c == chr(10):
                             key_str = "enter"
                             # do nothing
+                        elif c == chr(9):
+                            key_str = "TAB"
+                            # tab key
+                            # TODO: make this toggleable.
+                            # Currently just forced expandtab
+                            width_needed = TAB_WIDTH - (state.cur_x % TAB_WIDTH)
+                            for i in range(width_needed):
+                                insert_char(state, state.cur_x, state.scroll_y+state.cur_y, " ", textw)
+                            state.cur_x += width_needed
+                            state.preferred_cur_x = state.cur_x
                         else:
                             key_str = c  # a letter was input.
                             insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
