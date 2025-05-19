@@ -1,6 +1,7 @@
 import curses
 import sys
 import os
+import time
 
 TAB_WIDTH = 4
 
@@ -82,7 +83,7 @@ def draw_screen(screen, state):
             else:
                 break
         cur_y += 1
-    curses.doupdate()
+    screen.noutrefresh()
 
 
 def cursor_wrap_text(state):
@@ -93,16 +94,18 @@ def cursor_wrap_text(state):
     # Basically make it not go below where text ends in small files, or
     # when scrolling too far.
     if state.scroll_y + state.cur_y >= len(state.buffer_lines):
-        state.cur_y = max(0, len(state.buffer_lines) - 1)
+        state.cur_y = min(state.cur_y, len(state.buffer_lines) - 1)
     # Get current line for horizontal movement check.
     if len(state.buffer_lines) > 0:
         current_line = state.buffer_lines[state.scroll_y+state.cur_y]
     else:
         return  # nothing to do if no text.
     # Horizontal cursor movement
-    if state.cur_x > len(current_line) - 1 or \
-       state.preferred_cur_x > len(current_line) - 1:
+    if len(current_line) > 0 and (state.cur_x > len(current_line) - 1 or \
+       state.preferred_cur_x > len(current_line) - 1):
         state.cur_x = len(current_line) - 1  # Move to end of line
+    elif len(current_line) == 0:
+        state.cur_x = 0
     else:
         state.cur_x = state.preferred_cur_x
 
@@ -148,6 +151,17 @@ def delete_char(state, x, y, textw):
     textw.noutrefresh()
 
 
+def add_newline(state, x, y, textw):
+    """
+    Add a newline at the given position.
+    1. Deletes to the end of the line from the position given.
+    2. Puts that content on a new line below the current given one.
+    """
+    content_after = state.buffer_lines[y][x:]
+    state.buffer_lines[y] = state.buffer_lines[y][:x]
+    state.buffer_lines.insert(y+1, content_after)
+
+
 def handle_input(statusw, stdscr, state, textw):
     try:
         key_ch = stdscr.get_wch()
@@ -161,7 +175,12 @@ def handle_input(statusw, stdscr, state, textw):
                             state.mode = "command"
                         elif c == chr(10):
                             key_str = "enter"
-                            # do nothing
+                            # Enter. Add a newline.
+                            add_newline(state, state.cur_x, state.scroll_y+state.cur_y, textw)
+                            state.cur_y += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
+                            state.cur_x = 0
+                            state.preferred_cur_x = state.cur_x
+                            draw_screen(textw, state)
                         elif c == chr(9):
                             key_str = "TAB"
                             # tab key
@@ -235,9 +254,7 @@ def handle_input(statusw, stdscr, state, textw):
         key_str = "ctrl+c"
 
     statusw.clear()
-    if key_str == "enter":
-        status_str = "Currently, ENTER and newlines are unsupported. Coming soon!"
-    elif key_str == "ctrl+c":
+    if key_str == "ctrl+c":
         status_str = "To quit Nitra, press Ctrl+x, then q"
     else:
         status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
@@ -246,7 +263,14 @@ def handle_input(statusw, stdscr, state, textw):
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
     # move cursor back to avoid confusing user
-    stdscr.move(state.cur_y, state.cur_x)
+    if state.cur_y < state.editor_height and \
+       state.cur_x >= 0 and state.cur_x < state.editor_width and \
+       state.cur_y >= 0:
+        stdscr.move(state.cur_y, state.cur_x)
+    else:
+        curses.endwin()
+        print(f"Illegal position: {state.cur_x} {state.cur_y}")
+        time.sleep(2)
 
 
 def main_loop(stdscr, state):
