@@ -133,37 +133,37 @@ def draw_line(state, text_y, screen_y, screen):
             break
 
 
-def insert_char(state, x, y, char, textw):
+def insert_char(screen, x, y, char):
     """
     Inserts the given character into the buffer at the given position.
     Will also update the screen if needed.
     """
-    state.buffer_lines[y] = state.buffer_lines[y][:x] + char + state.buffer_lines[y][x:]
-    draw_line(state, y, y-state.scroll_y, textw)
-    textw.noutrefresh()
+    screen.buff[y] = screen.buff[y][:x] + char + screen.buff[y][x:]
+    screen.dirty_lines.add(y - screen.scroll_y)
 
 
-def delete_char(state, x, y, textw):
+def delete_char(screen, x, y):
     """
     Delete the char at the given position.
     """
-    state.buffer_lines[y] = state.buffer_lines[y][:x] + state.buffer_lines[y][x+1:]
-    draw_line(state, y, y-state.scroll_y, textw)
-    textw.noutrefresh()
+    screen.buff[y] = screen.buff[y][:x] + screen.buff[y][x+1:]
+    screen.dirty_lines.add(y - screen.scroll_y)
 
 
-def add_newline(state, x, y, textw):
+def add_newline(screen, x, y):
     """
     Add a newline at the given position.
     1. Deletes to the end of the line from the position given.
     2. Puts that content on a new line below the current given one.
     """
-    content_after = state.buffer_lines[y][x:]
-    state.buffer_lines[y] = state.buffer_lines[y][:x]
-    state.buffer_lines.insert(y+1, content_after)
+    content_after = screen.buff[y][x:]
+    screen.buff[y] = screen.buff[y][:x]
+    screen.buff.insert(y+1, content_after)
 
 
-def handle_input(statusw, stdscr, state, textw):
+def handle_input(statusw, stdscr, state, screen):
+    cur_x_diff = 0
+    cur_y_diff = 0
     try:
         key_ch = stdscr.get_wch()
         match state.mode:
@@ -177,69 +177,58 @@ def handle_input(statusw, stdscr, state, textw):
                         elif c == chr(10):
                             key_str = "enter"
                             # Enter. Add a newline.
-                            add_newline(state, state.cur_x, state.scroll_y+state.cur_y, textw)
-                            state.cur_y += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
-                            state.cur_x = 0
-                            state.preferred_cur_x = state.cur_x
-                            draw_screen(textw, state)
+                            add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+                            cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
+                            cur_x_diff = -screen.cur_x
+                            screen.dirty_lines.update(range(screen.cur_y, screen.height))
                         elif c == chr(9):
                             key_str = "TAB"
                             # tab key
                             # TODO: make this toggleable.
                             # Currently just forced expandtab
-                            width_needed = TAB_WIDTH - (state.cur_x % TAB_WIDTH)
+                            width_needed = TAB_WIDTH - (screen.cur_x % TAB_WIDTH)
                             for i in range(width_needed):
-                                insert_char(state, state.cur_x, state.scroll_y+state.cur_y, " ", textw)
-                            state.cur_x += width_needed
-                            state.preferred_cur_x = state.cur_x
+                                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, " ")
+                            cur_x_diff += width_needed
                         else:
                             key_str = c  # a letter was input.
-                            insert_char(state, state.cur_x, state.scroll_y+state.cur_y, c, textw)
-                            state.cur_x += 1
-                            state.preferred_cur_x = state.cur_x
+                            insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                            cur_x_diff += 1
                     case 258:
                         key_str = "arrow_down"
-                        if state.cur_y < state.editor_height - 1:
-                            state.cur_y += 1
-                            cursor_wrap_text(state)
-                        elif state.scroll_y < len(state.buffer_lines) - state.editor_height:
-                            state.scroll_y += 1
-                            state.screen_dirty = True
-                        stdscr.move(state.cur_y, state.cur_x)
+                        cur_y_diff += 1 # all that other code is now the responsibility of screen.move_cursor
                     case 259:
                         key_str = "arrow_up"
-                        if state.cur_y > 0:
-                            state.cur_y -= 1
-                            cursor_wrap_text(state)
-                        elif state.scroll_y > 0:
-                            state.scroll_y -= 1
-                            state.screen_dirty = True
-                        stdscr.move(state.cur_y, state.cur_x)
+                        # The below code was kept for reference.
+                        # if state.cur_y > 0:
+                        #     state.cur_y -= 1
+                        #     cursor_wrap_text(state)
+                        # elif state.scroll_y > 0:
+                        #     state.scroll_y -= 1
+                        #     state.screen_dirty = True
+                        # stdscr.move(state.cur_y, state.cur_x)
+                        cur_y_diff -= 1
                     case 260:
                         key_str = "arrow_left"
-                        if state.cur_x > 0:
-                            state.cur_x -= 1
-                            state.preferred_cur_x = state.cur_x
-                            cursor_wrap_text(state)
-                        stdscr.move(state.cur_y, state.cur_x)
+                        cur_x_diff -= 1
+                        # if state.cur_x > 0:
+                        #     state.cur_x -= 1
+                        #     state.preferred_cur_x = state.cur_x
+                        #     cursor_wrap_text(state)
+                        # stdscr.move(state.cur_y, state.cur_x)
                     case 261:
                         key_str = "arrow_right"
-                        if state.cur_x < state.editor_width - 1:
-                            state.cur_x += 1
-                            state.preferred_cur_x = state.cur_x
-                            cursor_wrap_text(state)
-                        stdscr.move(state.cur_y, state.cur_x)
+                        cur_x_diff += 1
                     case 263:
                         key_str = "backspace"
-                        if state.cur_x > 0:
-                            state.cur_x -= 1
-                            state.preferred_cur_x = state.cur_x
-                            delete_char(state, state.cur_x, state.scroll_y+state.cur_y, textw)
+                        if screen.cur_x > 0:
+                            cur_x_diff -= 1
+                            delete_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
                     case 330:
                         key_str = "del"
-                        y_pos = state.scroll_y + state.cur_y
-                        if len(state.buffer_lines[y_pos]) > 0:
-                            delete_char(state, state.cur_x, y_pos, textw)
+                        y_pos = screen.scroll_y + screen.cur_y
+                        if len(screen.buff[y_pos]) > 0:
+                            delete_char(screen, screen.cur_x, y_pos)
                     case _:
                         key_str = f"UNK {repr(key_ch)}"
             case "command":
@@ -259,19 +248,23 @@ def handle_input(statusw, stdscr, state, textw):
         status_str = "To quit Nitra, press Ctrl+x, then q"
     else:
         status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
-            f"X: {state.cur_x+state.scroll_x} ({state.cur_x}/{state.preferred_cur_x}), " + \
-            f"Y: {state.cur_y+state.scroll_y+1} ({state.cur_y}), INPUT: {key_str}"
+            f"X: {screen.cur_x+screen.scroll_x} ({screen.cur_x}/{screen.cur_x_preferred}), " + \
+            f"Y: {screen.cur_y+screen.scroll_y+1} ({screen.cur_y}), INPUT: {key_str}"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
-    # move cursor back to avoid confusing user
-    if state.cur_y < state.editor_height and \
-       state.cur_x >= 0 and state.cur_x < state.editor_width and \
-       state.cur_y >= 0:
-        stdscr.move(state.cur_y, state.cur_x)
-    else:
-        curses.endwin()
-        print(f"Illegal position: {state.cur_x} {state.cur_y}")
-        time.sleep(2)
+    if len(screen.dirty_lines) > 0:
+        screen.draw_screen()
+    if cur_x_diff != 0 or cur_y_diff != 0:
+        screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
+    # # move cursor back to avoid confusing user
+    # if state.cur_y < state.editor_height and \
+    #    state.cur_x >= 0 and state.cur_x < state.editor_width and \
+    #    state.cur_y >= 0:
+    #     stdscr.move(state.cur_y, state.cur_x)
+    # else:
+    #     curses.endwin()
+    #     print(f"Illegal position: {state.cur_x} {state.cur_y}")
+    #     time.sleep(2)
 
 
 def main_loop(stdscr, state):
@@ -283,15 +276,12 @@ def main_loop(stdscr, state):
     state.editor_height = state.win_height - 1
     statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
     textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
-    screen = Screen(0, 0, state.editor_width, state.editor_height, textw)
+    screen = Screen(0, 0, state.editor_width, state.editor_height, textw, buff=state.buffer_lines)
     while True:
         if state.ending:
             return
-        if state.screen_dirty:
-            state.screen_dirty = False
-            draw_screen(textw, state)
-            curses.doupdate()
-        handle_input(statusw, stdscr, state, textw)
+        handle_input(statusw, stdscr, state, screen)
+        screen.put_cursor()
 
 
 def main():
