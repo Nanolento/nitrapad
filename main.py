@@ -3,8 +3,9 @@ import sys
 import os
 import time
 
-TAB_WIDTH = 4
+from screen import Screen
 
+TAB_WIDTH = 4
 
 class State:
     def __init__(self):
@@ -282,6 +283,7 @@ def main_loop(stdscr, state):
     state.editor_height = state.win_height - 1
     statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
     textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
+    screen = Screen(0, 0, state.editor_width, state.editor_height, textw)
     while True:
         if state.ending:
             return
