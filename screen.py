@@ -1,7 +1,7 @@
 import curses
 
 class Screen:
-    def __init__(self, x, y, width, height, screen, buff=None):
+    def __init__(self, x, y, width, height, screen, buff=None, filename="(untitled)"):
         self.x = x
         self.y = y
         self.width = width
@@ -14,17 +14,19 @@ class Screen:
         self.cur_x_preferred = 0
         self.cur_y = 0
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
+        self.filename = filename # Temporary until FileIO implementation.
         if buff:
             self.buff = buff # Temp: buff = buffer_lines
             # in future, will be Buffer obj supporting operations
 
 
     def draw_status(self):
-        status_str = f"Nitra v0 | " + \
+        status_str = f"{self.filename} | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
         self._draw_line(status_str, self.height - 1, invert_colors=True)
-
+        version_str = "Nitra INDEV"
+        self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
 
     def _cursor_wrap_text(self, wanted_x, wanted_y):
         """
