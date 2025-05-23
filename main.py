@@ -277,6 +277,7 @@ def main_loop(stdscr, state):
     statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
     textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
     screen = Screen(0, 0, state.editor_width, state.editor_height, textw, buff=state.buffer_lines)
+    screen.draw_screen(redraw=True)
     while True:
         if state.ending:
             return

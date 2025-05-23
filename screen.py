@@ -82,11 +82,16 @@ class Screen:
         self.cur_y = wanted_y
         
 
-    def draw_screen(self):
-        for ln in self.dirty_lines:
+    def draw_screen(self, redraw=False):
+        if redraw:
+            lines_to_draw = range(self.height)
+        else:
+            lines_to_draw = self.dirty_lines
+        
+        for ln in lines_to_draw:
             if ln <= len(self.buff) - 1:
                 line = self.buff[self.scroll_y + ln]
-            self._draw_line(line, self.scroll_y + self.cur_y, self.cur_y)
+                self._draw_line(line, self.scroll_y + ln, ln)
         self.dirty_lines = set()
         self.curses_screen.refresh()
 
