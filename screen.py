@@ -70,13 +70,24 @@ class Screen:
         # Bounds check
         # > 0
         wanted_x = max(0, wanted_x)
-        wanted_y = max(0, wanted_y)
         # < height and so is handled by cursor_wrap_text
 
         if relative and x != 0:
             self.cur_x_preferred = wanted_x
         
         wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
+
+        if wanted_y > self.height - 1:
+            wanted_y = self.height - 1
+            self.scroll_y += 1
+            self.draw_screen(redraw=True)
+        elif wanted_y < 0 and self.scroll_y > 0:
+            wanted_y = 0
+            self.scroll_y -= 1
+            self.draw_screen(redraw=True)
+        elif wanted_y < 0 and self.scroll_y == 0:
+            wanted_y = 0
+            
 
         self.cur_x = wanted_x
         self.cur_y = wanted_y
