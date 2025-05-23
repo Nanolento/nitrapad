@@ -240,13 +240,17 @@ def handle_input(stdscr, state, screen):
                     case _:
                         state.mode = "normal"
                         key_str = f"UNK {repr(key_ch)}"
-    except (KeyboardInterrupt, curses.error):
+    except KeyboardInterrupt:
         key_str = "ctrl+c"
+    except curses.error:
+        key_str = "none"
 
     if len(screen.dirty_lines) > 0:
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:
         screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
+
+    return key_str != "none"
 
 
 def main_loop(stdscr, state):
@@ -258,10 +262,12 @@ def main_loop(stdscr, state):
     state.editor_height = state.win_height
     screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr, buff=state.buffer_lines)
     screen.draw_screen(redraw=True)
+    stdscr.nodelay(True)
     while True:
         if state.ending:
             return
-        handle_input(stdscr, state, screen)
+        key_pressed = handle_input(stdscr, state, screen)
+        screen.draw_status()
         screen.put_cursor()
 
 

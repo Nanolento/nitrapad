@@ -6,6 +6,7 @@ class Screen:
         self.y = y
         self.width = width
         self.height = height
+        self.edit_height = height - 1 # Compensate for status line
         self.curses_screen = screen
         self.scroll_x = 0  # Scroll positions
         self.scroll_y = 0
@@ -16,6 +17,14 @@ class Screen:
         if buff:
             self.buff = buff # Temp: buff = buffer_lines
             # in future, will be Buffer obj supporting operations
+
+
+    def draw_status(self):
+        status_str = f"Nitra v0 | " + \
+            f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
+            f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
+        self._draw_line(status_str, self.height - 1, invert_colors=True)
+
 
     def _cursor_wrap_text(self, wanted_x, wanted_y):
         """
@@ -77,8 +86,8 @@ class Screen:
         
         wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
 
-        if wanted_y > self.height - 1:
-            wanted_y = self.height - 1
+        if wanted_y > self.edit_height - 1:
+            wanted_y = self.edit_height - 1
             self.scroll_y += 1
             self.draw_screen(redraw=True)
         elif wanted_y < 0 and self.scroll_y > 0:
@@ -95,19 +104,19 @@ class Screen:
 
     def draw_screen(self, redraw=False):
         if redraw:
-            lines_to_draw = range(self.height)
+            lines_to_draw = range(self.edit_height)
         else:
             lines_to_draw = self.dirty_lines
         
         for ln in lines_to_draw:
             if ln <= len(self.buff) - 1:
                 line = self.buff[self.scroll_y + ln]
-                self._draw_line(line, self.scroll_y + ln, ln)
+                self._draw_line(line, ln)
         self.dirty_lines = set()
         self.curses_screen.refresh()
 
 
-    def _draw_line(self, line, text_y, screen_y):
+    def _draw_line(self, line, screen_y, invert_colors=False):
         cur_x = 0
         self.curses_screen.move(screen_y, 0)
         self.curses_screen.clrtoeol()
@@ -117,7 +126,10 @@ class Screen:
                 continue
             if cur_x < self.width and screen_y < self.height:
                 try:
-                    self.curses_screen.addch(screen_y, cur_x, char)
+                    if invert_colors:
+                        self.curses_screen.addch(screen_y, cur_x, char, curses.A_REVERSE)
+                    else:
+                        self.curses_screen.addch(screen_y, cur_x, char)
                 except curses.error as e:
                     if cur_x != state.editor_width - 1 or screen_y != state.editor_height - 1:
                         # raise an exception only if the cur pos is irregular
