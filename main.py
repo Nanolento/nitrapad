@@ -166,82 +166,90 @@ def handle_input(stdscr, state, screen):
     cur_y_diff = 0
     try:
         key_ch = stdscr.get_wch()
-        match state.mode:
-            case "normal":
-                match key_ch:
-                    case c if isinstance(c, str):
-                        # Character typed.
-                        if c == chr(24):
-                            key_str = "ctrl+x"
-                            state.mode = "command"
-                        elif c == chr(10):
-                            key_str = "enter"
-                            # Enter. Add a newline.
-                            add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
-                            cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
-                            cur_x_diff = -screen.cur_x
-                            screen.dirty_lines.update(range(screen.cur_y, screen.height))
-                        elif c == chr(9):
-                            key_str = "TAB"
-                            # tab key
-                            # TODO: make this toggleable.
-                            # Currently just forced expandtab
-                            width_needed = TAB_WIDTH - (screen.cur_x % TAB_WIDTH)
-                            for i in range(width_needed):
-                                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, " ")
-                            cur_x_diff += width_needed
-                        else:
-                            key_str = c  # a letter was input.
-                            insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
-                            cur_x_diff += 1
-                    case 258:
-                        key_str = "arrow_down"
-                        cur_y_diff += 1 # all that other code is now the responsibility of screen.move_cursor
-                    case 259:
-                        key_str = "arrow_up"
-                        # The below code was kept for reference.
-                        # if state.cur_y > 0:
-                        #     state.cur_y -= 1
-                        #     cursor_wrap_text(state)
-                        # elif state.scroll_y > 0:
-                        #     state.scroll_y -= 1
-                        #     state.screen_dirty = True
-                        # stdscr.move(state.cur_y, state.cur_x)
-                        cur_y_diff -= 1
-                    case 260:
-                        key_str = "arrow_left"
-                        cur_x_diff -= 1
-                        # if state.cur_x > 0:
-                        #     state.cur_x -= 1
-                        #     state.preferred_cur_x = state.cur_x
-                        #     cursor_wrap_text(state)
-                        # stdscr.move(state.cur_y, state.cur_x)
-                    case 261:
-                        key_str = "arrow_right"
-                        cur_x_diff += 1
-                    case 263:
-                        key_str = "backspace"
-                        if screen.cur_x > 0:
+        if not state.filename == "!DEBUG_KEY!":
+            match state.mode:
+                case "normal":
+                    match key_ch:
+                        case c if isinstance(c, str):
+                            # Character typed.
+                            if c == chr(24):
+                                key_str = "ctrl+x"
+                                state.mode = "command"
+                            elif c == chr(10):
+                                key_str = "enter"
+                                # Enter. Add a newline.
+                                add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+                                cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
+                                cur_x_diff = -screen.cur_x
+                                screen.dirty_lines.update(range(screen.cur_y, screen.height))
+                            elif c == chr(9):
+                                key_str = "TAB"
+                                # tab key
+                                # TODO: make this toggleable.
+                                # Currently just forced expandtab
+                                width_needed = TAB_WIDTH - (screen.cur_x % TAB_WIDTH)
+                                for i in range(width_needed):
+                                    insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, " ")
+                                cur_x_diff += width_needed
+                            else:
+                                key_str = c  # a letter was input.
+                                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                                cur_x_diff += 1
+                        case 258:
+                            key_str = "arrow_down"
+                            cur_y_diff += 1 # all that other code is now the responsibility of screen.move_cursor
+                        case 259:
+                            key_str = "arrow_up"
+                            # The below code was kept for reference.
+                            # if state.cur_y > 0:
+                            #     state.cur_y -= 1
+                            #     cursor_wrap_text(state)
+                            # elif state.scroll_y > 0:
+                            #     state.scroll_y -= 1
+                            #     state.screen_dirty = True
+                            # stdscr.move(state.cur_y, state.cur_x)
+                            cur_y_diff -= 1
+                        case 260:
+                            key_str = "arrow_left"
                             cur_x_diff -= 1
-                            delete_char(screen, screen.cur_x-1, screen.scroll_y+screen.cur_y)
-                    case 330:
-                        key_str = "del"
-                        y_pos = screen.scroll_y + screen.cur_y
-                        if len(screen.buff[y_pos]) > 0:
-                            delete_char(screen, screen.cur_x, y_pos)
-                    case _:
-                        key_str = f"UNK {repr(key_ch)}"
-            case "command":
-                match key_ch:
-                    case 'q':
-                        key_str = "q"
-                        # exit application.
-                        state.ending = True
-                    case _:
-                        state.mode = "normal"
-                        key_str = f"UNK {repr(key_ch)}"
-    except KeyboardInterrupt:
-        key_str = "ctrl+c"
+                            # if state.cur_x > 0:
+                            #     state.cur_x -= 1
+                            #     state.preferred_cur_x = state.cur_x
+                            #     cursor_wrap_text(state)
+                            # stdscr.move(state.cur_y, state.cur_x)
+                        case 261:
+                            key_str = "arrow_right"
+                            cur_x_diff += 1
+                        case 263:
+                            key_str = "backspace"
+                            if screen.cur_x > 0:
+                                cur_x_diff -= 1
+                                delete_char(screen, screen.cur_x-1, screen.scroll_y+screen.cur_y)
+                        case 330:
+                            key_str = "del"
+                            y_pos = screen.scroll_y + screen.cur_y
+                            if len(screen.buff[y_pos]) > 0:
+                                delete_char(screen, screen.cur_x, y_pos)
+                        case _:
+                            key_str = f"UNK {repr(key_ch)}"
+                case "command":
+                    match key_ch:
+                        case 'q':
+                            key_str = "q"
+                            # exit application.
+                            state.ending = True
+                        case _:
+                            state.mode = "normal"
+                            key_str = f"UNK {repr(key_ch)}"
+        else:
+            # KEY DEBUG MODE
+            key_str = repr(key_ch)
+            for c in key_str:
+                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                screen.cur_x += 1
+            add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+            screen.cur_x = 0
+            screen.cur_y += 1
     except curses.error:
         key_str = "none"
 
@@ -274,12 +282,16 @@ def main_loop(stdscr, state):
 def main():
     state = State()
     if len(sys.argv) == 2:
-        state.buffer_lines = load_file(sys.argv[1])
-        state.file_path = sys.argv[1]
-        state.filename = os.path.basename(state.file_path)
-        if not state.buffer_lines:
-            print("Could not load file!")
-            return
+        if sys.argv[1] == "!debug_key!":
+            print("Enabled key_debug mode")
+            state.filename = "!DEBUG_KEY!"
+        else:
+            state.buffer_lines = load_file(sys.argv[1])
+            state.file_path = sys.argv[1]
+            state.filename = os.path.basename(state.file_path)
+            if not state.buffer_lines:
+                print("Could not load file!")
+                return
 
     curses.wrapper(main_loop, state)
 

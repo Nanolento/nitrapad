@@ -17,6 +17,8 @@ class Screen:
         self.filename = filename # Temporary until FileIO implementation.
         if buff:
             self.buff = buff # Temp: buff = buffer_lines
+        else:
+            self.buff = [""]
             # in future, will be Buffer obj supporting operations
 
 
