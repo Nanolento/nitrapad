@@ -25,12 +25,12 @@ class Screen:
         # Basically make it not go below where text ends in small files, or
         # when scrolling too far.
         if self.scroll_y + wanted_y >= len(self.buff):
-            wanted_y = min(wanted_y, len(self.buff) - 1)
+            wanted_y = min(wanted_y, len(self.buff) - 1 - self.scroll_y)
         # Get current line for horizontal movement check.
         if len(self.buff) > 0:
             current_line = self.buff[self.scroll_y+wanted_y]
         else:
-            return wanted_x, wanted_y # nothing to do if no text.
+            return 0, wanted_y # no text, and wrap to beginning
         # Horizontal cursor movement
         if len(current_line) > 0 and (wanted_x > len(current_line) - 1 or \
            self.cur_x_preferred > len(current_line) - 1):
@@ -48,6 +48,7 @@ class Screen:
         Used for user comfort so they can see where they are typing.
         """
         self.curses_screen.move(self.cur_y, self.cur_x)
+        self.curses_screen.refresh()
 
 
     def move_cursor(self, x, y, relative=False):
@@ -60,8 +61,8 @@ class Screen:
         Returns False if move failed and True if successful.
         """
         if relative:
-            wanted_x = self.x + x
-            wanted_y = self.y + y
+            wanted_x = self.cur_x + x
+            wanted_y = self.cur_y + y
         else:
             wanted_x = x
             wanted_y = y
@@ -71,6 +72,9 @@ class Screen:
         wanted_x = max(0, wanted_x)
         wanted_y = max(0, wanted_y)
         # < height and so is handled by cursor_wrap_text
+
+        if relative and x != 0:
+            self.cur_x_preferred = wanted_x
         
         wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
 
