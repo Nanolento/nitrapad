@@ -161,7 +161,7 @@ def add_newline(screen, x, y):
     screen.buff.insert(y+1, content_after)
 
 
-def handle_input(statusw, stdscr, state, screen):
+def handle_input(stdscr, state, screen):
     cur_x_diff = 0
     cur_y_diff = 0
     try:
@@ -247,24 +247,6 @@ def handle_input(statusw, stdscr, state, screen):
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:
         screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
-    statusw.clear()
-    if key_str == "ctrl+c":
-        status_str = "To quit Nitra, press Ctrl+x, then q"
-    else:
-        status_str = f"{state.filename if state.mode == 'normal' else state.mode.upper()}, " + \
-            f"X: {screen.cur_x+screen.scroll_x} ({screen.cur_x}/{screen.cur_x_preferred}), " + \
-            f"Y: {screen.cur_y+screen.scroll_y+1} ({screen.cur_y}), INPUT: {key_str}"
-    statusw.addstr(0, 0, status_str)
-    statusw.refresh()
-    # # move cursor back to avoid confusing user
-    # if state.cur_y < state.editor_height and \
-    #    state.cur_x >= 0 and state.cur_x < state.editor_width and \
-    #    state.cur_y >= 0:
-    #     stdscr.move(state.cur_y, state.cur_x)
-    # else:
-    #     curses.endwin()
-    #     print(f"Illegal position: {state.cur_x} {state.cur_y}")
-    #     time.sleep(2)
 
 
 def main_loop(stdscr, state):
@@ -273,15 +255,13 @@ def main_loop(stdscr, state):
     state.win_width = curses.COLS
     state.win_height = curses.LINES
     state.editor_width = state.win_width
-    state.editor_height = state.win_height - 1
-    statusw = stdscr.subwin(1, state.win_width, state.win_height - 1, 0)
-    textw = stdscr.subwin(state.editor_height, state.editor_width, 0, 0)
-    screen = Screen(0, 0, state.editor_width, state.editor_height, textw, buff=state.buffer_lines)
+    state.editor_height = state.win_height
+    screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr, buff=state.buffer_lines)
     screen.draw_screen(redraw=True)
     while True:
         if state.ending:
             return
-        handle_input(statusw, stdscr, state, screen)
+        handle_input(stdscr, state, screen)
         screen.put_cursor()
 
 
