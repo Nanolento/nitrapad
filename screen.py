@@ -78,10 +78,6 @@ class Screen:
         
         wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
 
-        # Update preferred cursor X if only horizontal
-        if relative and y == 0:
-            self.cur_x_preferred = self.cur_x
-
         self.cur_x = wanted_x
         self.cur_y = wanted_y
         

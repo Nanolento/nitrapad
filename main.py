@@ -223,7 +223,7 @@ def handle_input(statusw, stdscr, state, screen):
                         key_str = "backspace"
                         if screen.cur_x > 0:
                             cur_x_diff -= 1
-                            delete_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+                            delete_char(screen, screen.cur_x-1, screen.scroll_y+screen.cur_y)
                     case 330:
                         key_str = "del"
                         y_pos = screen.scroll_y + screen.cur_y
@@ -243,6 +243,10 @@ def handle_input(statusw, stdscr, state, screen):
     except (KeyboardInterrupt, curses.error):
         key_str = "ctrl+c"
 
+    if len(screen.dirty_lines) > 0:
+        screen.draw_screen()
+    if cur_x_diff != 0 or cur_y_diff != 0:
+        screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
     statusw.clear()
     if key_str == "ctrl+c":
         status_str = "To quit Nitra, press Ctrl+x, then q"
@@ -252,10 +256,6 @@ def handle_input(statusw, stdscr, state, screen):
             f"Y: {screen.cur_y+screen.scroll_y+1} ({screen.cur_y}), INPUT: {key_str}"
     statusw.addstr(0, 0, status_str)
     statusw.refresh()
-    if len(screen.dirty_lines) > 0:
-        screen.draw_screen()
-    if cur_x_diff != 0 or cur_y_diff != 0:
-        screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
     # # move cursor back to avoid confusing user
     # if state.cur_y < state.editor_height and \
     #    state.cur_x >= 0 and state.cur_x < state.editor_width and \
