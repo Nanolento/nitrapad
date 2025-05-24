@@ -274,7 +274,7 @@ def main_loop(stdscr, state):
     state.editor_height = state.win_height
     screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr, buff=state.buffer_lines, filename=state.filename)
     screen.draw_screen(redraw=True)
-    stdscr.nodelay(True)
+    curses.halfdelay(5)
     while True:
         if state.ending:
             return
