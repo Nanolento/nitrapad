@@ -47,7 +47,7 @@ class Screen:
         # Horizontal cursor movement
         if len(current_line) > 0 and (wanted_x > len(current_line) - 1 or \
            self.cur_x_preferred > len(current_line) - 1):
-            wanted_x = len(current_line) - 1  # Move to end of line
+            wanted_x = len(current_line)  # Move to end of line
         elif len(current_line) == 0:
             wanted_x = 0
         else:

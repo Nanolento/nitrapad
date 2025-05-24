@@ -30,7 +30,7 @@ def load_file(file_path):
     if os.path.isfile(file_path):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                buff = f.readlines()
+                buff = [line.rstrip("\r\n") for line in f.readlines()]
         except UnicodeDecodeError:
             print("This is most likely not a text file, since Unicode decoding failed!\n"
                   "Nitra works with UTF-8 encoded text files only (for now).")
