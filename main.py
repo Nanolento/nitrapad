@@ -250,6 +250,10 @@ def handle_input(stdscr, state, screen):
             add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
             screen.cur_x = 0
             screen.cur_y += 1
+            if screen.cur_y > screen.edit_height - 1:
+                screen.scroll_y += 1
+                screen.cur_y = screen.edit_height - 1
+                screen.draw_screen(redraw=True)
     except curses.error:
         key_str = "none"
 
