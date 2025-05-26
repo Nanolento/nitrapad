@@ -26,7 +26,7 @@ class Screen:
         status_str = f"{self.filename} | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
-        self._draw_line(status_str, self.height - 1, invert_colors=True)
+        self.curses_screen.addstr(self.height - 1, 0, status_str, curses.A_REVERSE)
         version_str = "Nitra INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
 
@@ -40,18 +40,17 @@ class Screen:
         if self.scroll_y + wanted_y >= len(self.buff):
             wanted_y = min(wanted_y, len(self.buff) - 1 - self.scroll_y)
         # Get current line for horizontal movement check.
-        if len(self.buff) > 0:
-            current_line = self.buff[self.scroll_y+wanted_y]
-        else:
-            return 0, wanted_y # no text, and wrap to beginning
+        current_line = self.buff[self.scroll_y+wanted_y]
         # Horizontal cursor movement
-        if len(current_line) > 0 and (wanted_x > len(current_line) - 1 or \
-           self.cur_x_preferred > len(current_line) - 1):
-            wanted_x = len(current_line)  # Move to end of line
-        elif len(current_line) == 0:
+        if len(current_line) == 0 and self.scroll_x == 0:
             wanted_x = 0
+        elif len(current_line) == 0 and self.scroll_x > 0:
+            wanted_x = -self.scroll_x
+        elif len(current_line) > 0 and (wanted_x + self.scroll_x > len(current_line) - 1 or \
+           self.cur_x_preferred > len(current_line) - 1):
+            wanted_x = len(current_line) - self.scroll_x  # Move to end of line
         else:
-            wanted_x = self.cur_x_preferred
+            wanted_x = self.cur_x_preferred - self.scroll_x
         return wanted_x, wanted_y
 
 
@@ -80,16 +79,10 @@ class Screen:
             wanted_x = x
             wanted_y = y
 
-        # Bounds check
-        # > 0
-        wanted_x = max(0, wanted_x)
-        # < height and so is handled by cursor_wrap_text
-
         if relative and x != 0:
-            self.cur_x_preferred = wanted_x
-        
-        wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
+            self.cur_x_preferred = wanted_x + self.scroll_x
 
+        # Vertical scrolling
         if wanted_y > self.edit_height - 1:
             wanted_y = self.edit_height - 1
             self.scroll_y += 1
@@ -100,8 +93,21 @@ class Screen:
             self.draw_screen(redraw=True)
         elif wanted_y < 0 and self.scroll_y == 0:
             wanted_y = 0
-            
 
+        wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
+
+        # Horizontal scrolling
+        if wanted_x > self.width - 1:
+            self.scroll_x += wanted_x - (self.width - 1)
+            wanted_x = self.width - 1
+            self.draw_screen(redraw=True)
+        elif wanted_x < 0 and self.scroll_x > 0:
+            self.scroll_x += wanted_x
+            wanted_x = 0
+            self.draw_screen(redraw=True)
+        elif wanted_x < 0 and self.scroll_x == 0:
+            wanted_x = 0
+            
         self.cur_x = wanted_x
         self.cur_y = wanted_y
         
@@ -115,7 +121,11 @@ class Screen:
         for ln in lines_to_draw:
             if ln <= len(self.buff) - 1:
                 line = self.buff[self.scroll_y + ln]
-                self._draw_line(line, ln)
+                if len(line) > self.scroll_x: # is the line on-screen at all?
+                    self._draw_line(line, ln)
+                else:
+                    self.curses_screen.move(ln, 0)
+                    self.curses_screen.clrtoeol() # Clear line
         self.dirty_lines = set()
         self.curses_screen.refresh()
 
@@ -124,10 +134,12 @@ class Screen:
         cur_x = 0
         self.curses_screen.move(screen_y, 0)
         self.curses_screen.clrtoeol()
-        for char in line.rstrip():
+        for char in line.rstrip()[self.scroll_x:]:
             if ord(char) == 9:
                 cur_x += 1
                 continue
+            if cur_x > self.width:
+                break # No need to render characters outside of screen
             if cur_x < self.width and screen_y < self.height:
                 try:
                     if invert_colors:
