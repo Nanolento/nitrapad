@@ -26,7 +26,7 @@ class Screen:
         status_str = f"{self.filename} | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
-        self.curses_screen.addstr(self.height - 1, 0, status_str, curses.A_REVERSE)
+        self._draw_line(status_str, self.height - 1, invert_colors=True, screen_space=True)
         version_str = "Nitra INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
 
@@ -130,11 +130,19 @@ class Screen:
         self.curses_screen.refresh()
 
 
-    def _draw_line(self, line, screen_y, invert_colors=False):
+    def _draw_line(self, line, screen_y, invert_colors=False, screen_space=False):
+        """
+        Draw a text line on the screen.
+        screen_space: if True, ignore screen scrolling when rendering, else adhere to it.
+        """
         cur_x = 0
         self.curses_screen.move(screen_y, 0)
         self.curses_screen.clrtoeol()
-        for char in line.rstrip()[self.scroll_x:]:
+        if not screen_space:
+            chars_to_draw = line.rstrip()[self.scroll_x:]
+        else:
+            chars_to_draw = line.rstrip()
+        for char in chars_to_draw:
             if ord(char) == 9:
                 cur_x += 1
                 continue
