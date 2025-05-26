@@ -101,22 +101,22 @@ def handle_input(stdscr, state, screen):
                             elif c == chr(10):
                                 key_str = "enter"
                                 # Enter. Add a newline.
-                                add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+                                add_newline(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y)
                                 cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
-                                cur_x_diff = -screen.cur_x
+                                cur_x_diff = -screen.cur_x - screen.scroll_x
                                 screen.dirty_lines.update(range(screen.cur_y, screen.height))
                             elif c == chr(9):
                                 key_str = "TAB"
                                 # tab key
                                 # TODO: make this toggleable.
                                 # Currently just forced expandtab
-                                width_needed = TAB_WIDTH - (screen.cur_x % TAB_WIDTH)
+                                width_needed = TAB_WIDTH - ((screen.scroll_x + screen.cur_x) % TAB_WIDTH)
                                 for i in range(width_needed):
-                                    insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, " ")
+                                    insert_char(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, " ")
                                 cur_x_diff += width_needed
                             else:
                                 key_str = c  # a letter was input.
-                                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                                insert_char(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, c)
                                 cur_x_diff += 1
                         case 258:
                             key_str = "arrow_down"
@@ -147,12 +147,12 @@ def handle_input(stdscr, state, screen):
                             key_str = "backspace"
                             if screen.cur_x > 0:
                                 cur_x_diff -= 1
-                                delete_char(screen, screen.cur_x-1, screen.scroll_y+screen.cur_y)
+                                delete_char(screen, screen.scroll_x+screen.cur_x-1, screen.scroll_y+screen.cur_y)
                         case 330:
                             key_str = "del"
                             y_pos = screen.scroll_y + screen.cur_y
                             if len(screen.buff[y_pos]) > 0:
-                                delete_char(screen, screen.cur_x, y_pos)
+                                delete_char(screen, screen.scroll_x+screen.cur_x, y_pos)
                         case _:
                             key_str = f"UNK {repr(key_ch)}"
                 case "command":
@@ -168,9 +168,9 @@ def handle_input(stdscr, state, screen):
             # KEY DEBUG MODE
             key_str = repr(key_ch)
             for c in key_str:
-                insert_char(screen, screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                insert_char(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, c)
                 screen.cur_x += 1
-            add_newline(screen, screen.cur_x, screen.scroll_y+screen.cur_y)
+            add_newline(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y)
             screen.cur_x = 0
             screen.cur_y += 1
             if screen.cur_y > screen.edit_height - 1:
