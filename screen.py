@@ -83,7 +83,7 @@ class Screen:
             self.cur_x_preferred = wanted_x + self.scroll_x
 
         # Vertical scrolling
-        if wanted_y > self.edit_height - 1:
+        if wanted_y > self.edit_height - 1 and wanted_y + self.scroll_y < len(self.buff):
             wanted_y = self.edit_height - 1
             self.scroll_y += 1
             self.draw_screen(redraw=True)
