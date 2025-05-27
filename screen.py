@@ -176,7 +176,8 @@ class Screen:
             chars_to_draw = line.rstrip()
         for char in chars_to_draw:
             if ord(char) == 9:
-                cur_x += 1
+                current_x = self.scroll_x + cur_x
+                cur_x += 4 - (current_x % 4) # 4 is currently hardcoded tab width
                 continue
             if cur_x > self.width:
                 break # No need to render characters outside of screen
