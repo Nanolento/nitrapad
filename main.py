@@ -125,7 +125,9 @@ def handle_input(stdscr, state, screen):
     if len(screen.dirty_lines) > 0:
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:
-        screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
+        # Move logical cursor
+        screen.buff.move_cursor(cur_x_diff, cur_y_diff, relative=True)
+        screen.move_cursor() # Move visual cursor along aswell
 
     return key_str != "none"
 

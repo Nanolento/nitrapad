@@ -40,10 +40,14 @@ class Buffer:
             wanted_x = len(current_line)  # Move to end of line
         return wanted_x, wanted_y
 
-    def move_cursor(self, x, y):
+    def move_cursor(self, x, y, relative=True):
         """
         Move the logical cursor of the buffer around.
         """
+        if relative:
+            x = self.cur_x + x
+            y = self.cur_y + y
+        
         # Bounds checks
         x = max(0, x)
         y = max(0, y)
