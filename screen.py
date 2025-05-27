@@ -36,9 +36,9 @@ class Screen:
         the buffer directly or not directly visible.
         """
         if tone == "auto":
-            if message.startswith("E:"):
+            if message.startswith("E"):
                 tone = "error"
-            elif message.startswith("W:") or message.startswith("WD:"):
+            elif message.startswith("W") or message.startswith("WD"):
                 tone = "warning"
             else:
                 tone = "message"
