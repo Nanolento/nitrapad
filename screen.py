@@ -12,9 +12,12 @@ class Screen:
         self.curses_screen = screen
         self.scroll_x = 0  # Scroll positions
         self.scroll_y = 0
+
+        # Screen cursor, visual not logical
         self.cur_x = 0
         self.cur_x_preferred = 0
         self.cur_y = 0
+        
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
         self.message_shown = False # if there is currently a status message.
         
@@ -91,13 +94,16 @@ class Screen:
         Put the terminal cursor at the virtual screen cursor position.
         Used for user comfort so they can see where they are typing.
         """
-        self.curses_screen.move(self.cur_y, self.cur_x)
+        try:
+            self.curses_screen.move(self.cur_y, self.cur_x)
+        except curses.error:
+            raise Exception(f"Failed to move cursor to location ({self.cur_x}, {self.cur_y})")
         self.curses_screen.refresh()
 
 
     def move_cursor(self, x, y, relative=False):
         """
-        Move the cursor around.
+        Move the cursor around in the buffer and adjust screen accordingly.
         With relative=True, compute new coords and move them there.
         Note: this function will automatically wrap the cursor to the text,
         and prevent the cursor from moving outside the screen etc. and scroll
@@ -105,8 +111,8 @@ class Screen:
         Returns False if move failed and True if successful.
         """
         if relative:
-            wanted_x = self.cur_x + x
-            wanted_y = self.cur_y + y
+            wanted_x = self.buff.cur_x + x
+            wanted_y = self.buff.cur_y + y
         else:
             wanted_x = x
             wanted_y = y
@@ -115,33 +121,37 @@ class Screen:
             self.cur_x_preferred = wanted_x + self.scroll_x
 
         # Vertical scrolling
-        if wanted_y > self.edit_height - 1 and wanted_y + self.scroll_y < len(self.buff):
-            wanted_y = self.edit_height - 1
+        if wanted_y - self.scroll_y > self.edit_height - 1 and wanted_y < len(self.buff):
+            wanted_y = self.scroll_y + self.edit_height
             self.scroll_y += 1
             self.draw_screen(redraw=True)
-        elif wanted_y < 0 and self.scroll_y > 0:
-            wanted_y = 0
+        elif wanted_y - self.scroll_y < 0 and self.scroll_y > 0:
+            wanted_y = self.scroll_y - 1
             self.scroll_y -= 1
             self.draw_screen(redraw=True)
         elif wanted_y < 0 and self.scroll_y == 0:
             wanted_y = 0
 
-        wanted_x, wanted_y = self._cursor_wrap_text(wanted_x, wanted_y)
-
+        self.buff.move_cursor(wanted_x, wanted_y)
+        if (self.buff.cur_x < 0 or self.buff.cur_y < 0):
+            raise Exception(f"Buffer cursor moved to less than 0: ({self.buff.cur_x}, {self.buff.cur_y})")
+        
         # Horizontal scrolling
-        if wanted_x > self.width - 1:
-            self.scroll_x += wanted_x - (self.width - 1)
-            wanted_x = self.width - 1
+        if self.buff.cur_x - self.scroll_x > self.width - 1:
+            self.scroll_x += (self.buff.cur_x - self.scroll_x) - (self.width - 1)
+            wanted_x = self.scroll_x + self.width - 1
             self.draw_screen(redraw=True)
-        elif wanted_x < 0 and self.scroll_x > 0:
-            self.scroll_x += wanted_x
+        elif self.buff.cur_x - self.scroll_x < 0 and self.scroll_x > 0:
+            self.scroll_x += (self.buff.cur_x - self.scroll_x)
             wanted_x = 0
             self.draw_screen(redraw=True)
-        elif wanted_x < 0 and self.scroll_x == 0:
+        elif self.buff.cur_x - self.scroll_x < 0 and self.scroll_x == 0:
             wanted_x = 0
+        else:
+            wanted_x = self.buff.cur_x
             
-        self.cur_x = wanted_x
-        self.cur_y = wanted_y
+        self.cur_x = wanted_x - self.scroll_x
+        self.cur_y = wanted_y - self.scroll_y
         
 
     def draw_screen(self, redraw=False):

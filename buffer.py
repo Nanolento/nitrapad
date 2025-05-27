@@ -4,6 +4,12 @@ from file import File
 class Buffer:
     def __init__(self, screen, file=None):
         self.lines = [""]
+
+        # Buffer cursor (logical, rather than visual)
+        self.cur_x = 0
+        self.cur_y = 0
+
+        # File handling
         if file:
             self.file = file
             lines, result_msg = file.load()
@@ -15,6 +21,38 @@ class Buffer:
 
     def __len__(self):
         return len(self.lines)
+
+    def _cursor_wrap_text(self, wanted_x, wanted_y):
+        """
+        This function moves the logical cursor so that it is always in valid text.
+        """
+        # Vertical cursor movement
+        # Basically make it not go below where text ends in small files, or
+        # when scrolling too far.
+        if wanted_y >= len(self.lines):
+            wanted_y = min(wanted_y, len(self.lines) - 1)
+        # Get current line for horizontal movement check.
+        current_line = self.lines[wanted_y]
+        # Horizontal cursor movement
+        if len(current_line) == 0:
+            wanted_x = 0
+        elif len(current_line) > 0 and wanted_x > len(current_line) - 1:
+            wanted_x = len(current_line)  # Move to end of line
+        return wanted_x, wanted_y
+
+    def move_cursor(self, x, y):
+        """
+        Move the logical cursor of the buffer around.
+        """
+        # Bounds checks
+        x = max(0, x)
+        y = max(0, y)
+        y = min(len(self.lines), y)
+        
+        wanted_x, wanted_y = self._cursor_wrap_text(x, y)
+
+        self.cur_x = wanted_x
+        self.cur_y = wanted_y
 
     def insert_char(self, x, y, char):
         """
