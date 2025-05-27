@@ -15,7 +15,8 @@ class Screen:
 
         # Screen cursor, visual not logical
         self.cur_x = 0
-        self.cur_x_preferred = 0
+        self.cur_x_preferred = 0 # Preferred x location, makes x cursor same across different length lines
+        self.cur_x_diff = 0 # Diff of x-pos of logical and screen cursor
         self.cur_y = 0
         
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
@@ -89,7 +90,7 @@ class Screen:
         return wanted_x, wanted_y
 
 
-    def put_cursor(self):
+    def put_terminal_cursor(self):
         """
         Put the terminal cursor at the virtual screen cursor position.
         Used for user comfort so they can see where they are typing.
@@ -115,13 +116,28 @@ class Screen:
                 count += 1
         return count
 
-    def move_cursor(self):
+    def move_cursor(self, x, y, relative=True):
+        """
+        Move logical cursor in a way that visually makes sense.
+        Basically a wrapper for Buffer.move_cursor()
+        """
+        preferred_x = self.cur_x_preferred - self.cur_x_diff
+        self.buff.move_cursor(x, y, relative, preferred_x=preferred_x)
+
+        self.put_cursor()
+        if (not relative) or x != 0:
+            self.cur_x_preferred = self.scroll_x + self.cur_x
+
+
+    def put_cursor(self):
         """
         Move the screen cursor to the buffer/logical cursor's location.
         """
         # Target locations
         target_x = self._visual_chars_before_cursor(self.buff.cur_x, self.buff.lines[self.buff.cur_y])
         target_y = self.buff.cur_y
+
+        self.cur_x_diff = target_x - self.buff.cur_x
 
         # Vertical scrolling
         if target_y - self.scroll_y < 0:

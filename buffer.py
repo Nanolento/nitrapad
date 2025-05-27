@@ -22,9 +22,10 @@ class Buffer:
     def __len__(self):
         return len(self.lines)
 
-    def _cursor_wrap_text(self, wanted_x, wanted_y):
+    def _cursor_wrap_text(self, wanted_x, wanted_y, preferred_x=-1):
         """
         This function moves the logical cursor so that it is always in valid text.
+        If preferred_x is set, move the cursor there rather than just within the text.
         """
         # Vertical cursor movement
         # Basically make it not go below where text ends in small files, or
@@ -36,24 +37,30 @@ class Buffer:
         # Horizontal cursor movement
         if len(current_line) == 0:
             wanted_x = 0
-        elif len(current_line) > 0 and wanted_x > len(current_line) - 1:
+        elif len(current_line) > 0 and (wanted_x > len(current_line) - 1 or \
+                                        preferred_x > len(current_line) - 1):
             wanted_x = len(current_line)  # Move to end of line
+        elif preferred_x != -1:
+            wanted_x = preferred_x
         return wanted_x, wanted_y
 
-    def move_cursor(self, x, y, relative=True):
+    def move_cursor(self, x, y, relative=True, preferred_x=0):
         """
         Move the logical cursor of the buffer around.
         """
         if relative:
-            x = self.cur_x + x
-            y = self.cur_y + y
+            target_x = self.cur_x + x
+            target_y = self.cur_y + y
         
         # Bounds checks
-        x = max(0, x)
-        y = max(0, y)
-        y = min(len(self.lines), y)
-        
-        wanted_x, wanted_y = self._cursor_wrap_text(x, y)
+        target_x = max(0, target_x)
+        target_y = max(0, target_y)
+        target_y = min(len(self.lines), target_y)
+
+        if relative and x != 0:
+            wanted_x, wanted_y = self._cursor_wrap_text(target_x, target_y, preferred_x=-1)
+        else:
+            wanted_x, wanted_y = self._cursor_wrap_text(target_x, target_y, preferred_x=preferred_x+x)
 
         self.cur_x = wanted_x
         self.cur_y = wanted_y

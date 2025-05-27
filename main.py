@@ -125,9 +125,8 @@ def handle_input(stdscr, state, screen):
     if len(screen.dirty_lines) > 0:
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:
-        # Move logical cursor
-        screen.buff.move_cursor(cur_x_diff, cur_y_diff, relative=True)
-        screen.move_cursor() # Move visual cursor along aswell
+        # Move logical cursor and visual cursor together
+        screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
 
     return key_str != "none"
 
@@ -148,7 +147,7 @@ def main_loop(stdscr, file_path, state):
         screen.draw_status()
     else:
         screen.message_shown = False
-    screen.put_cursor()
+    screen.put_terminal_cursor()
     while True:
         if state.ending:
             return
@@ -157,7 +156,7 @@ def main_loop(stdscr, file_path, state):
             screen.message_shown = False
         else:
             screen.draw_status()
-        screen.put_cursor()
+        screen.put_terminal_cursor()
 
 
 def main():
