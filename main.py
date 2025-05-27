@@ -97,6 +97,10 @@ def handle_input(stdscr, state, screen):
                             key_str = "q"
                             # exit application.
                             state.ending = True
+                        case 'w':
+                            key_str = "w"
+                            # save file
+                            screen.buff.save()
                         case _:
                             state.mode = "normal"
                             key_str = f"UNK {repr(key_ch)}"

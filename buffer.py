@@ -37,3 +37,11 @@ class Buffer:
         content_after = self.lines[y][x:]
         self.lines[y] = self.lines[y][:x]
         self.lines.insert(y+1, content_after)
+
+    def save(self):
+        """
+        Order this buffer to save its contents to its file, or ask the user
+        to pick a file to save to (unimplemented) if there is no file.
+        """
+        if self.file:
+            self.file.save(self.lines)

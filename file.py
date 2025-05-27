@@ -21,3 +21,16 @@ class File:
         else:
             print("W1: file does not exist, returning empty")
             return [""]
+
+    def save(self, lines):
+        """
+        Write the given text lines to this file.
+        """
+        try:
+            with open(self.path, "w", encoding="utf-8") as f:
+                for line in lines:
+                    print(line, file=f)
+            return True
+        except OSError as e:
+            print("E2: Error while writing to file: {e}")
+            return False
