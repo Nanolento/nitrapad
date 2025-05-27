@@ -117,8 +117,9 @@ class Screen:
             wanted_x = x
             wanted_y = y
 
-        if relative and x != 0:
-            self.cur_x_preferred = wanted_x + self.scroll_x
+        if relative and x == 0:
+            #self.cur_x_preferred = wanted_x + self.scroll_x
+            wanted_x = self.cur_x_preferred
 
         # Vertical scrolling
         if wanted_y - self.scroll_y > self.edit_height - 1 and wanted_y < len(self.buff):
@@ -143,7 +144,7 @@ class Screen:
             self.draw_screen(redraw=True)
         elif self.buff.cur_x - self.scroll_x < 0 and self.scroll_x > 0:
             self.scroll_x += (self.buff.cur_x - self.scroll_x)
-            wanted_x = 0
+            wanted_x = self.scroll_x
             self.draw_screen(redraw=True)
         elif self.buff.cur_x - self.scroll_x < 0 and self.scroll_x == 0:
             wanted_x = 0
@@ -151,7 +152,10 @@ class Screen:
             wanted_x = self.buff.cur_x
             
         self.cur_x = wanted_x - self.scroll_x
-        self.cur_y = wanted_y - self.scroll_y
+        self.cur_y = self.buff.cur_y - self.scroll_y
+
+        if relative and x != 0:
+            self.cur_x_preferred = self.buff.cur_x
         
 
     def draw_screen(self, redraw=False):
