@@ -56,34 +56,6 @@ def _debug_info(state):
     return debug_str
 
 
-def insert_char(screen, x, y, char):
-    """
-    Inserts the given character into the buffer at the given position.
-    Will also update the screen if needed.
-    """
-    screen.buff[y] = screen.buff[y][:x] + char + screen.buff[y][x:]
-    screen.dirty_lines.add(y - screen.scroll_y)
-
-
-def delete_char(screen, x, y):
-    """
-    Delete the char at the given position.
-    """
-    screen.buff[y] = screen.buff[y][:x] + screen.buff[y][x+1:]
-    screen.dirty_lines.add(y - screen.scroll_y)
-
-
-def add_newline(screen, x, y):
-    """
-    Add a newline at the given position.
-    1. Deletes to the end of the line from the position given.
-    2. Puts that content on a new line below the current given one.
-    """
-    content_after = screen.buff[y][x:]
-    screen.buff[y] = screen.buff[y][:x]
-    screen.buff.insert(y+1, content_after)
-
-
 def handle_input(stdscr, state, screen):
     cur_x_diff = 0
     cur_y_diff = 0
@@ -101,7 +73,7 @@ def handle_input(stdscr, state, screen):
                             elif c == chr(10):
                                 key_str = "enter"
                                 # Enter. Add a newline.
-                                add_newline(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y)
+                                screen.buff.add_newline(screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y)
                                 cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
                                 cur_x_diff = -screen.cur_x - screen.scroll_x
                                 screen.dirty_lines.update(range(screen.cur_y, screen.height))
@@ -112,11 +84,13 @@ def handle_input(stdscr, state, screen):
                                 # Currently just forced expandtab
                                 width_needed = TAB_WIDTH - ((screen.scroll_x + screen.cur_x) % TAB_WIDTH)
                                 for i in range(width_needed):
-                                    insert_char(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, " ")
+                                    screen.buff.insert_char(screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, " ")
+                                screen.dirty_lines.add(screen.cur_y)
                                 cur_x_diff += width_needed
                             else:
                                 key_str = c  # a letter was input.
-                                insert_char(screen, screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                                screen.buff.insert_char(screen.scroll_x+screen.cur_x, screen.scroll_y+screen.cur_y, c)
+                                screen.dirty_lines.add(screen.cur_y)
                                 cur_x_diff += 1
                         case 258:
                             key_str = "arrow_down"
@@ -147,12 +121,14 @@ def handle_input(stdscr, state, screen):
                             key_str = "backspace"
                             if screen.cur_x > 0:
                                 cur_x_diff -= 1
-                                delete_char(screen, screen.scroll_x+screen.cur_x-1, screen.scroll_y+screen.cur_y)
+                                screen.buff.delete_char(screen.scroll_x+screen.cur_x-1, screen.scroll_y+screen.cur_y)
+                                screen.dirty_lines.add(screen.cur_y)
                         case 330:
                             key_str = "del"
                             y_pos = screen.scroll_y + screen.cur_y
-                            if len(screen.buff[y_pos]) > 0:
+                            if len(screen.buff.lines[y_pos]) > 0:
                                 delete_char(screen, screen.scroll_x+screen.cur_x, y_pos)
+                                screen.dirty_lines.add(screen.cur_y)
                         case _:
                             key_str = f"UNK {repr(key_ch)}"
                 case "command":
@@ -195,7 +171,7 @@ def main_loop(stdscr, state):
     state.win_height = curses.LINES
     state.editor_width = state.win_width
     state.editor_height = state.win_height
-    screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr, buff=state.buffer_lines, filename=state.filename)
+    screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr)
     screen.draw_screen(redraw=True)
     while True:
         if state.ending:

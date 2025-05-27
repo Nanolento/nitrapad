@@ -1,7 +1,9 @@
 import curses
 
+from buffer import Buffer
+
 class Screen:
-    def __init__(self, x, y, width, height, screen, buff=None, filename="(untitled)"):
+    def __init__(self, x, y, width, height, screen):
         self.x = x
         self.y = y
         self.width = width
@@ -14,16 +16,11 @@ class Screen:
         self.cur_x_preferred = 0
         self.cur_y = 0
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
-        self.filename = filename # Temporary until FileIO implementation.
-        if buff:
-            self.buff = buff # Temp: buff = buffer_lines
-        else:
-            self.buff = [""]
-            # in future, will be Buffer obj supporting operations
+        self.buff = Buffer()
 
 
     def draw_status(self):
-        status_str = f"{self.filename} | " + \
+        status_str = f"(temp removed filename, sorry!) | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
         self._draw_line(status_str, self.height - 1, invert_colors=True, screen_space=True)
@@ -40,7 +37,7 @@ class Screen:
         if self.scroll_y + wanted_y >= len(self.buff):
             wanted_y = min(wanted_y, len(self.buff) - 1 - self.scroll_y)
         # Get current line for horizontal movement check.
-        current_line = self.buff[self.scroll_y+wanted_y]
+        current_line = self.buff.lines[self.scroll_y+wanted_y]
         # Horizontal cursor movement
         if len(current_line) == 0 and self.scroll_x == 0:
             wanted_x = 0
@@ -120,7 +117,7 @@ class Screen:
         
         for ln in lines_to_draw:
             if ln <= len(self.buff) - 1:
-                line = self.buff[self.scroll_y + ln]
+                line = self.buff.lines[self.scroll_y + ln]
                 if len(line) > self.scroll_x: # is the line on-screen at all?
                     self._draw_line(line, ln)
                 else:
