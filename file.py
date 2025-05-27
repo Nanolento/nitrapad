@@ -14,13 +14,11 @@ class File:
                 with open(self.path, "r", encoding="utf-8") as f:
                     buff = [line.rstrip("\r\n") for line in f.readlines()]
             except UnicodeDecodeError:
-                print("E1: This is most likely not a text file, since Unicode decoding failed!\n"
-                      "Nitra only supports UTF-8 encoded text files only (at least for now).")
-                return False
-            return buff
+                return False, "E1: This is most likely not a text file, since Unicode decoding failed!\n" + \
+                    "Nitra only supports UTF-8 encoded text files only (at least for now)."
+            return buff, f"Loaded in file {self.path}"
         else:
-            print("W1: file does not exist, returning empty")
-            return [""]
+            return [""], "W1: specified file does not exist, will be created when saved"
 
     def save(self, lines):
         """
@@ -32,5 +30,7 @@ class File:
                     print(line, file=f)
             return True, f"Wrote to {self.path}"
         except OSError as e:
-            print("E2: Error while writing to file: {e}")
-            return False, "E2: Error while writing to file"
+            if e.errno == 13:
+                return False, f"E2: Permission denied for writing to {self.path}"
+            else:
+                return False, f"E3: Error while writing to file: {e}"

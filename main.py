@@ -101,13 +101,7 @@ def handle_input(stdscr, state, screen):
                             key_str = "w"
                             # save file
                             result, result_msg = screen.buff.save()
-                            if result_msg.startswith("E:"):
-                                msg_tone = "error"
-                            elif result_msg.startswith("W:") or result_msg.startswith("WD:"):
-                                msg_tone = "warning"
-                            else:
-                                msg_tone = "message"
-                            screen.draw_status_message(result_msg, tone=msg_tone)
+                            screen.draw_status_message(result_msg)
                             state.mode = "normal"
                         case _:
                             state.mode = "normal"
@@ -141,12 +135,18 @@ def main_loop(stdscr, file_path, state):
     stdscr.clear()
     editor_width = curses.COLS
     editor_height = curses.LINES
-    if file_path and os.path.isfile(file_path):
+    if file_path:
         file = File(file_path)
         screen = Screen(0, 0, editor_width, editor_height, stdscr, file=file)
     else:
         screen = Screen(0, 0, editor_width, editor_height, stdscr)
     screen.draw_screen(redraw=True)
+    # This is there so the initial "Loaded in file" message can appear
+    if not screen.message_shown:
+        screen.draw_status()
+    else:
+        screen.message_shown = False
+    screen.put_cursor()
     while True:
         if state.ending:
             return

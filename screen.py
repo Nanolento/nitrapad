@@ -25,18 +25,25 @@ class Screen:
         curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_YELLOW)
         
         if file:
-            self.buff = Buffer(file)
+            self.buff = Buffer(self, file=file)
         else:
-            self.buff = Buffer()
+            self.buff = Buffer(self) # self = passing ourselves as a screen, so buffer can raise messages
 
-    def draw_status_message(self, message, tone="message"):
+    def draw_status_message(self, message, tone="auto"):
         """
         Temporarily (until user presses a key, overwrite status line
         with a specified message, used to provide feedback to the user on actions that don't affect
         the buffer directly or not directly visible.
         """
-        if tone not in ["message", "error", "warning"]:
-            tone = "message"
+        if tone == "auto":
+            if message.startswith("E:"):
+                tone = "error"
+            elif message.startswith("W:") or message.startswith("WD:"):
+                tone = "warning"
+            else:
+                tone = "message"
+        elif tone not in ["message", "error", "warning"]:
+            raise Exception(f"Invalid status message tone: {tone}")
         if tone == "message":
             self._draw_line(message, self.height - 1, color="invert", screen_space=True)
         else:

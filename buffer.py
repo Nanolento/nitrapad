@@ -2,11 +2,12 @@
 from file import File
 
 class Buffer:
-    def __init__(self, file=None):
+    def __init__(self, screen, file=None):
         self.lines = [""]
         if file:
             self.file = file
-            lines = file.load()
+            lines, result_msg = file.load()
+            screen.draw_status_message(result_msg)
             if lines:
                 self.lines = lines
         else:
