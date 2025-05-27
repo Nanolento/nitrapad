@@ -1,7 +1,16 @@
 
+from file import File
+
 class Buffer:
-    def __init__(self, filepath=None):
+    def __init__(self, file=None):
         self.lines = [""]
+        if file:
+            self.file = file
+            lines = file.load()
+            if lines:
+                self.lines = lines
+        else:
+            self.file = None
 
     def __len__(self):
         return len(self.lines)

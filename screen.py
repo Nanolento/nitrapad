@@ -3,7 +3,7 @@ import curses
 from buffer import Buffer
 
 class Screen:
-    def __init__(self, x, y, width, height, screen):
+    def __init__(self, x, y, width, height, screen, file=None):
         self.x = x
         self.y = y
         self.width = width
@@ -16,7 +16,10 @@ class Screen:
         self.cur_x_preferred = 0
         self.cur_y = 0
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
-        self.buff = Buffer()
+        if file:
+            self.buff = Buffer(file)
+        else:
+            self.buff = Buffer()
 
 
     def draw_status(self):

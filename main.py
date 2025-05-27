@@ -4,6 +4,7 @@ import os
 import time
 
 from screen import Screen
+from file import File
 
 TAB_WIDTH = 4
 
@@ -164,14 +165,16 @@ def handle_input(stdscr, state, screen):
     return key_str != "none"
 
 
-def main_loop(stdscr, state):
+def main_loop(stdscr, file_path, state):
     curses.use_default_colors()
     stdscr.clear()
-    state.win_width = curses.COLS
-    state.win_height = curses.LINES
-    state.editor_width = state.win_width
-    state.editor_height = state.win_height
-    screen = Screen(0, 0, state.editor_width, state.editor_height, stdscr)
+    editor_width = curses.COLS
+    editor_height = curses.LINES
+    if file_path and os.path.isfile(file_path):
+        file = File(file_path)
+        screen = Screen(0, 0, editor_width, editor_height, stdscr, file=file)
+    else:
+        screen = Screen(0, 0, editor_width, editor_height, stdscr)
     screen.draw_screen(redraw=True)
     while True:
         if state.ending:
@@ -183,19 +186,16 @@ def main_loop(stdscr, state):
 
 def main():
     state = State()
+    file_path = None
     if len(sys.argv) == 2:
         if sys.argv[1] == "!debug_key!":
             print("Enabled key_debug mode")
             state.filename = "!DEBUG_KEY!"
         else:
-            state.buffer_lines = load_file(sys.argv[1])
-            state.file_path = sys.argv[1]
-            state.filename = os.path.basename(state.file_path)
-            if not state.buffer_lines:
-                print("Could not load file!")
-                return
+            file_path = sys.argv[1]
+            state.filename = os.path.basename(file_path)
 
-    curses.wrapper(main_loop, state)
+    curses.wrapper(main_loop, file_path, state)
 
 
 if __name__ == "__main__":
