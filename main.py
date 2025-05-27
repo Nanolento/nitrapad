@@ -10,17 +10,6 @@ TAB_WIDTH = 4
 
 class State:
     def __init__(self):
-        self.cur_x = 0
-        self.cur_y = 0
-        self.preferred_cur_x = 0  # Remember x value for convenient cursor movement
-        self.scroll_x = 0  # Horizontal scrolling unimplemented for now.
-        self.scroll_y = 0
-        self.win_height = 40
-        self.win_width = 80
-        self.editor_height = 39
-        self.editor_width = 80
-        self.buffer_lines = []
-        self.screen_dirty = True  # will make it redraw on next cycle.
         self.file_path = "*NEW*"
         self.filename = "*NEW*"  # only basename, displayed in status line etc.
         self.mode = "normal"  # mode for interpreting input
