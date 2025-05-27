@@ -44,4 +44,7 @@ class Buffer:
         to pick a file to save to (unimplemented) if there is no file.
         """
         if self.file:
-            self.file.save(self.lines)
+            result, result_msg = self.file.save(self.lines)
+            return result, result_msg
+        else:
+            return False, "WD: No file attached (temporary)!"

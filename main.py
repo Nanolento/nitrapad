@@ -100,7 +100,15 @@ def handle_input(stdscr, state, screen):
                         case 'w':
                             key_str = "w"
                             # save file
-                            screen.buff.save()
+                            result, result_msg = screen.buff.save()
+                            if result_msg.startswith("E:"):
+                                msg_tone = "error"
+                            elif result_msg.startswith("W:") or result_msg.startswith("WD:"):
+                                msg_tone = "warning"
+                            else:
+                                msg_tone = "message"
+                            screen.draw_status_message(result_msg, tone=msg_tone)
+                            state.mode = "normal"
                         case _:
                             state.mode = "normal"
                             key_str = f"UNK {repr(key_ch)}"
@@ -143,7 +151,10 @@ def main_loop(stdscr, file_path, state):
         if state.ending:
             return
         key_pressed = handle_input(stdscr, state, screen)
-        screen.draw_status()
+        if screen.message_shown:
+            screen.message_shown = False
+        else:
+            screen.draw_status()
         screen.put_cursor()
 
 

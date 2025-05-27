@@ -16,17 +16,38 @@ class Screen:
         self.cur_x_preferred = 0
         self.cur_y = 0
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
+        self.message_shown = False # if there is currently a status message.
+        
+        # Color setup
+        # Error status
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
+        # Warning status
+        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        
         if file:
             self.buff = Buffer(file)
         else:
             self.buff = Buffer()
 
-
+    def draw_status_message(self, message, tone="message"):
+        """
+        Temporarily (until user presses a key, overwrite status line
+        with a specified message, used to provide feedback to the user on actions that don't affect
+        the buffer directly or not directly visible.
+        """
+        if tone not in ["message", "error", "warning"]:
+            tone = "message"
+        if tone == "message":
+            self._draw_line(message, self.height - 1, color="invert", screen_space=True)
+        else:
+            self._draw_line(message, self.height - 1, color=tone, screen_space=True)
+        self.message_shown = True
+            
     def draw_status(self):
         status_str = f"(temp removed filename, sorry!) | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
-        self._draw_line(status_str, self.height - 1, invert_colors=True, screen_space=True)
+        self._draw_line(status_str, self.height - 1, color="invert", screen_space=True)
         version_str = "Nitra INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
 
@@ -130,7 +151,7 @@ class Screen:
         self.curses_screen.refresh()
 
 
-    def _draw_line(self, line, screen_y, invert_colors=False, screen_space=False):
+    def _draw_line(self, line, screen_y, color="normal", screen_space=False):
         """
         Draw a text line on the screen.
         screen_space: if True, ignore screen scrolling when rendering, else adhere to it.
@@ -150,8 +171,12 @@ class Screen:
                 break # No need to render characters outside of screen
             if cur_x < self.width and screen_y < self.height:
                 try:
-                    if invert_colors:
+                    if color == "invert":
                         self.curses_screen.addch(screen_y, cur_x, char, curses.A_REVERSE)
+                    elif color == "error":
+                        self.curses_screen.addch(screen_y, cur_x, char, curses.color_pair(1))
+                    elif color == "warning":
+                        self.curses_screen.addch(screen_y, cur_x, char, curses.color_pair(2))
                     else:
                         self.curses_screen.addch(screen_y, cur_x, char)
                 except curses.error as e:

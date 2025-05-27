@@ -30,7 +30,7 @@ class File:
             with open(self.path, "w", encoding="utf-8") as f:
                 for line in lines:
                     print(line, file=f)
-            return True
+            return True, f"Wrote to {self.path}"
         except OSError as e:
             print("E2: Error while writing to file: {e}")
-            return False
+            return False, "E2: Error while writing to file"
