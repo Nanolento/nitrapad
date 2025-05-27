@@ -117,7 +117,7 @@ def handle_input(stdscr, state, screen):
                             key_str = "del"
                             y_pos = screen.scroll_y + screen.cur_y
                             if len(screen.buff.lines[y_pos]) > 0:
-                                delete_char(screen, screen.scroll_x+screen.cur_x, y_pos)
+                                screen.buff.delete_char(screen.scroll_x+screen.cur_x, y_pos)
                                 screen.dirty_lines.add(screen.cur_y)
                         case _:
                             key_str = f"UNK {repr(key_ch)}"
