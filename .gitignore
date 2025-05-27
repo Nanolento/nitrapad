@@ -1,0 +1,6 @@
+# Test files
+*.txt
+
+# Python
+.venv/
+__pycache__/
