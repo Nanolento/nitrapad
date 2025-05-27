@@ -16,36 +16,6 @@ class State:
         self.ending = False  # whether to quit the application yet.
 
 
-def load_file(file_path):
-    if os.path.isfile(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                buff = [line.rstrip("\r\n") for line in f.readlines()]
-        except UnicodeDecodeError:
-            print("This is most likely not a text file, since Unicode decoding failed!\n"
-                  "Nitra works with UTF-8 encoded text files only (for now).")
-            return None
-        return buff
-    else:
-        print("That file does not exist!")
-        return None
-
-
-def _debug_info(state):
-    try:
-        debug_str = f"""
-        Current line: {state.buffer_lines[state.scroll_y+state.cur_y].rstrip()}
-        Current line length: {len(state.buffer_lines[state.scroll_y+state.cur_y])}
-        Cursor X/Y: {state.cur_x}/{state.cur_y}
-        Scroll X/Y: {state.scroll_x}/{state.scroll_y}
-        Absolute X/Y: {state.scroll_x + state.cur_x}/{state.scroll_y + state.cur_y}
-        File line count: {len(state.buffer_lines)}
-        """
-    except Exception:
-        debug_str = "Could not make debug info. Something's wrong!"
-    return debug_str
-
-
 def handle_input(stdscr, state, screen):
     cur_x_diff = 0
     cur_y_diff = 0
