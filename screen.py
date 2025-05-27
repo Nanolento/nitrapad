@@ -44,7 +44,11 @@ class Screen:
         self.message_shown = True
             
     def draw_status(self):
-        status_str = f"(temp removed filename, sorry!) | " + \
+        if self.buff.file:
+            filename = self.buff.file.filename
+        else:
+            filename = "!new"
+        status_str = f"{filename} | " + \
             f"L{self.cur_y+self.scroll_y+1} ({self.cur_y}) | " + \
             f"C{self.cur_x+self.scroll_x} ({self.cur_x}/{self.cur_x_preferred})"
         self._draw_line(status_str, self.height - 1, color="invert", screen_space=True)
