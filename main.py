@@ -101,7 +101,10 @@ def handle_input(stdscr, state, screen):
                             key_str = "w"
                             # save file
                             result, result_msg = screen.buff.save()
-                            screen.draw_status_message(result_msg)
+                            if result:
+                                screen.draw_status_message(result_msg, tone="message")
+                            else:
+                                screen.draw_status_message(result_msg, tone="auto")
                             state.mode = "normal"
                         case _:
                             state.mode = "normal"
