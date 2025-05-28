@@ -59,10 +59,10 @@ class Screen:
         else:
             filename = "!new"
         status_str = f"{filename} | " + \
-            f"L{self.buff.cur_y+1} ({self.scroll_y}+{self.cur_y}) " + \
-            f"C{self.buff.cur_x}/{self.scroll_x+self.cur_x} ({self.cur_x}/{self.cur_x_preferred})"
+            f"L{self.buff.cur_y+1} " + \
+            f"C{self.buff.cur_x}"
         self._draw_line(status_str, self.height - 1, color="invert", screen_space=True)
-        version_str = "Nitra INDEV"
+        version_str = "Nitrapad INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
 
     def _cursor_wrap_text(self, wanted_x, wanted_y):

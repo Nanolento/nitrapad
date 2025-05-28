@@ -15,7 +15,7 @@ class File:
                     buff = [line.rstrip("\r\n") for line in f.readlines()]
             except UnicodeDecodeError:
                 return False, "E1: This is most likely not a text file, since Unicode decoding failed!\n" + \
-                    "Nitra only supports UTF-8 encoded text files only (at least for now)."
+                    "Nitrapad only supports UTF-8 encoded text files only (at least for now)."
             return buff, f"Loaded in file {self.path}"
         else:
             return [""], "W1: specified file does not exist, will be created when saved"
