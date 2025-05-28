@@ -44,13 +44,16 @@ class Buffer:
             wanted_x = preferred_x
         return wanted_x, wanted_y
 
-    def move_cursor(self, x, y, relative=True, preferred_x=0):
+    def move_cursor(self, x, y, relative=True, preferred_x=-1):
         """
         Move the logical cursor of the buffer around.
         """
         if relative:
             target_x = self.cur_x + x
             target_y = self.cur_y + y
+        else:
+            target_x = x
+            target_y = y
         
         # Bounds checks
         target_x = max(0, target_x)
@@ -60,7 +63,7 @@ class Buffer:
         if relative and x != 0:
             wanted_x, wanted_y = self._cursor_wrap_text(target_x, target_y, preferred_x=-1)
         else:
-            wanted_x, wanted_y = self._cursor_wrap_text(target_x, target_y, preferred_x=preferred_x+x)
+            wanted_x, wanted_y = self._cursor_wrap_text(target_x, target_y, preferred_x=preferred_x)
 
         self.cur_x = wanted_x
         self.cur_y = wanted_y

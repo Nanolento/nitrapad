@@ -61,7 +61,7 @@ class Screen:
             filename = "!new"
         status_str = f"{filename} | " + \
             f"L{self.buff.cur_y+1} ({self.cur_y}) " + \
-            f"C{self.buff.cur_x}/{self.scroll_x+self.cur_x} ({self.cur_x}/{self.cur_x_preferred})"
+            f"C{self.buff.cur_x}/{self.scroll_x+self.cur_x} ({self.cur_x}/{self.cur_x_preferred}/{self.cur_x_diff})"
         self._draw_line(status_str, self.height - 1, color="invert", screen_space=True)
         version_str = "Nitra INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
@@ -116,17 +116,23 @@ class Screen:
                 count += 1
         return count
 
+
     def move_cursor(self, x, y, relative=True):
         """
         Move logical cursor in a way that visually makes sense.
         Basically a wrapper for Buffer.move_cursor()
         """
-        preferred_x = self.cur_x_preferred - self.cur_x_diff
-        self.buff.move_cursor(x, y, relative, preferred_x=preferred_x)
+        self.buff.move_cursor(x, y, relative, preferred_x=self.cur_x_preferred)
+
+        if relative and y != 0 and x == 0:
+            new_cur_x_visual = self._visual_chars_before_cursor(self.buff.cur_x, self.buff.lines[self.buff.cur_y])
+            visual_diff = self.cur_x_preferred - new_cur_x_visual
+            self.buff.move_cursor(visual_diff, 0, relative=True) # Compensate
+
+        if (not relative) or x != 0:
+            self.cur_x_preferred = self._visual_chars_before_cursor(self.buff.cur_x, self.buff.lines[self.buff.cur_y])
 
         self.put_cursor()
-        if (not relative) or x != 0:
-            self.cur_x_preferred = self.scroll_x + self.cur_x
 
 
     def put_cursor(self):
