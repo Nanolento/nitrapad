@@ -16,7 +16,6 @@ class Screen:
         # Screen cursor, visual not logical
         self.cur_x = 0
         self.cur_x_preferred = 0 # Preferred x location, makes x cursor same across different length lines
-        self.cur_x_diff = 0 # Diff of x-pos of logical and screen cursor
         self.cur_y = 0
         
         self.dirty_lines = set() # Lines that need redrawing on next draw_screen
@@ -60,8 +59,8 @@ class Screen:
         else:
             filename = "!new"
         status_str = f"{filename} | " + \
-            f"L{self.buff.cur_y+1} ({self.cur_y}) " + \
-            f"C{self.buff.cur_x}/{self.scroll_x+self.cur_x} ({self.cur_x}/{self.cur_x_preferred}/{self.cur_x_diff})"
+            f"L{self.buff.cur_y+1} ({self.scroll_y}+{self.cur_y}) " + \
+            f"C{self.buff.cur_x}/{self.scroll_x+self.cur_x} ({self.cur_x}/{self.cur_x_preferred})"
         self._draw_line(status_str, self.height - 1, color="invert", screen_space=True)
         version_str = "Nitra INDEV"
         self.curses_screen.addstr(self.height - 1, self.width - len(version_str) - 1, version_str, curses.A_REVERSE)
@@ -143,27 +142,34 @@ class Screen:
         target_x = self._visual_chars_before_cursor(self.buff.cur_x, self.buff.lines[self.buff.cur_y])
         target_y = self.buff.cur_y
 
-        self.cur_x_diff = target_x - self.buff.cur_x
-
+        did_scroll = False
+        
         # Vertical scrolling
         if target_y - self.scroll_y < 0:
             self.scroll_y += target_y - self.scroll_y
+            did_scroll = True
             self.cur_y = 0
-        elif target_y - self.scroll_y > self.edit_height:
-            self.scroll_y += target_y - self.scroll_y - self.edit_height
-            self.cur_y = self.edit_height
+        elif target_y - self.scroll_y > self.edit_height - 1:
+            self.scroll_y += target_y - self.scroll_y - self.edit_height + 1
+            did_scroll = True
+            self.cur_y = self.edit_height - 1
         else:
             self.cur_y = target_y - self.scroll_y
 
         # Horizontal scrolling
         if target_x - self.scroll_x < 0:
             self.scroll_x += target_x - self.scroll_x
+            did_scroll = True
             self.cur_x = 0
-        elif target_x - self.scroll_x > self.width:
-            self.scroll_x += target_x - self.scroll_x - self.width
-            self.cur_x = self.width
+        elif target_x - self.scroll_x > self.width - 1:
+            self.scroll_x += target_x - self.scroll_x - self.width + 1
+            did_scroll = True
+            self.cur_x = self.width - 1
         else:
             self.cur_x = target_x - self.scroll_x
+
+        if did_scroll:
+            self.draw_screen(redraw=True)
         
 
     def draw_screen(self, redraw=False):
