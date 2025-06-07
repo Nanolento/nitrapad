@@ -97,8 +97,8 @@ def handle_input(stdscr, state, screen):
                             key_str = "q"
                             # exit application.
                             state.ending = True
-                        case 'w':
-                            key_str = "w"
+                        case 's':
+                            key_str = "s"
                             # save file
                             result, result_msg = screen.buff.save()
                             if result:
