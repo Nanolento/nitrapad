@@ -19,9 +19,10 @@ class State:
 keybinds = {
     "Alt-s": "save-file",
     "Alt-q": "quit",
-    "Ctrl-d": "delete-line",
+    "Enter": "insert-newline",
     "char-type": "insert-char",
     "Backspace": "delete-backward",
+    "Ctrl-d": "delete-line",
     "Delete": "delete-forward",
     "Tab": "insert-tab",
     "ArrowUp": "move-up",
@@ -108,6 +109,11 @@ def handle_input(stdscr, state, screen):
                 screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, " ")
             screen.dirty_lines.add(screen.cur_y)
             cur_x_diff += width_needed
+        case "insert-newline":
+            screen.buff.add_newline(screen.buff.cur_x, screen.buff.cur_y)
+            cur_y_diff += 1
+            cur_x_diff = -screen.cur_x - screen.scroll_x
+            screen.dirty_lines.update(range(screen.cur_y, screen.height))
         case "delete-line":
             # unimplemented.
             screen.draw_status_message("Unimplemented 'delete-line'!", tone="warning")
