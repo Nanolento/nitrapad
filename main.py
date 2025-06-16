@@ -127,6 +127,14 @@ def handle_input(stdscr, state, screen):
                 cur_x_diff -= 1
                 screen.buff.delete_char(screen.buff.cur_x-1, screen.buff.cur_y)
                 screen.dirty_lines.add(screen.cur_y)
+            elif screen.buff.cur_x == 0 and screen.buff.cur_y > 0:
+                # delete newline
+                current_line = screen.buff.lines[screen.buff.cur_y]
+                screen.buff.lines[screen.buff.cur_y-1] += current_line
+                del screen.buff.lines[screen.buff.cur_y]
+                cur_y_diff -= 1
+                cur_x_diff = len(screen.buff.lines[screen.buff.cur_y-1]) - len(current_line) - screen.buff.cur_x
+                screen.dirty_lines.update(range(max(0,screen.cur_y-1), screen.height-1))
         case "move-up":
             cur_y_diff -= 1
         case "move-down":
