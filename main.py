@@ -67,9 +67,13 @@ def handle_input(stdscr, state, screen):
               ord_ch == 10 or
               ord_ch == 13):
             key_str = "Enter"
+        elif ord_ch == 0:
+            key_str = "Ctrl-Space"
+        elif ord_ch == 9:
+            key_str = "Tab"
         elif ord_ch <= 26:
             key_str = f"Ctrl-{chr(ord_ch+96)}"
-        elif 65 <= ord_ch <= 126:
+        elif key_ch.isprintable():
             key_str = "char-type"
         else:
             key_str = f"UNK STR {repr(key_ch)}"
@@ -85,13 +89,19 @@ def handle_input(stdscr, state, screen):
                 key_str = "ArrowRight"
             case curses.KEY_BACKSPACE:
                 key_str = "Backspace"
+            case curses.KEY_DC:
+                key_str = "Delete"
             case _:
-                key_str = f"UNK SPC {key_ch}"
+                key_str = f"UNK INT {key_ch}"
     command = resolve_keybind(key_str)
+    if not command:
+        screen.draw_status_message(f"Unbound key '{key_str}'.")
 
     match command:
         case "insert-char":
             screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, key_ch)
+            cur_x_diff += 1
+            screen.dirty_lines.add(screen.cur_y)
         case "insert-tab":
             width_needed = TAB_WIDTH - ((screen.buff.cur_x) % TAB_WIDTH)
             for i in range(width_needed):
