@@ -72,7 +72,7 @@ def handle_input(stdscr, state, screen):
             key_str = "Ctrl-Space"
         elif ord_ch == 9:
             key_str = "Tab"
-        elif ord_ch <= 26:
+        elif 1 <= ord_ch <= 26:
             key_str = f"Ctrl-{chr(ord_ch+96)}"
         elif key_ch.isprintable():
             key_str = "char-type"

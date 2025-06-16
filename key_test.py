@@ -51,7 +51,11 @@ def handle_input(stdscr, state, screen):
               ord_ch == 10 or
               ord_ch == 13):
             key_str = "Enter"
-        elif ord_ch <= 26:
+        elif ord_ch == 9:
+            key_str = "Tab"
+        elif ord_ch == 0:
+            key_str = "Ctrl-Space"
+        elif 1 <= ord_ch <= 26:
             key_str = f"Ctrl-{chr(ord_ch+96)}"
         elif 65 <= ord_ch <= 126:
             key_str = key_ch
