@@ -14,16 +14,30 @@ class State:
         self.filename = "*NEW*"  # only basename, displayed in status line etc.
         self.mode = "normal"  # mode for interpreting input
         self.ending = False  # whether to quit the application yet.
-        self.test_y = 0
+
 
 keybinds = {
     "Alt-s": "save-file",
     "Alt-q": "quit",
-    "Ctrl-d": "delete-line"
+    "Ctrl-d": "delete-line",
+    "char-type": "insert-char",
+    "Backspace": "delete-backward",
+    "Delete": "delete-forward",
+    "Tab": "insert-tab",
+    "ArrowUp": "move-up",
+    "ArrowDown": "move-down",
+    "ArrowLeft": "move-left",
+    "ArrowRight": "move-right",
 }
 
 
-    
+def resolve_keybind(key_str):
+    if key_str in keybinds:
+        return keybinds[key_str]
+    else:
+        return False
+
+
 def handle_input(stdscr, state, screen):
     cur_x_diff = 0
     cur_y_diff = 0
@@ -33,7 +47,9 @@ def handle_input(stdscr, state, screen):
         ord_ch = ord(key_ch)
         if ord_ch == 27:
             key_str = "Esc"
-            curses.halfdelay(5)
+            # Enable halfdelay mode, for detecting if Esc or Alt+X key combo.
+            curses.halfdelay(1)
+            # no worries about setting this. The main loop will reset raw mode automatically.
             just_esc = False
             try:
                 key_ch2 = stdscr.get_wch() # get second key but only wait a bit.
@@ -52,9 +68,9 @@ def handle_input(stdscr, state, screen):
               ord_ch == 13):
             key_str = "Enter"
         elif ord_ch <= 26:
-            key_str = f"Ctrl-{chr(ord_ch+64)}"
+            key_str = f"Ctrl-{chr(ord_ch+96)}"
         elif 65 <= ord_ch <= 126:
-            key_str = key_ch
+            key_str = "char-type"
         else:
             key_str = f"UNK STR {repr(key_ch)}"
     elif isinstance(key_ch, int): # special chars
@@ -71,24 +87,58 @@ def handle_input(stdscr, state, screen):
                 key_str = "Backspace"
             case _:
                 key_str = f"UNK SPC {key_ch}"
-    #command = resolve_keybind(key_str)
+    command = resolve_keybind(key_str)
+
+    match command:
+        case "insert-char":
+            screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, key_ch)
+        case "insert-tab":
+            width_needed = TAB_WIDTH - ((screen.buff.cur_x) % TAB_WIDTH)
+            for i in range(width_needed):
+                screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, " ")
+            screen.dirty_lines.add(screen.cur_y)
+            cur_x_diff += width_needed
+        case "delete-line":
+            # unimplemented.
+            screen.draw_status_message("Unimplemented 'delete-line'!", tone="warning")
+        case "delete-forward":
+            y_pos = screen.buff.cur_y
+            if len(screen.buff.lines[y_pos]) > 0:
+                screen.buff.delete_char(screen.buff.cur_x, y_pos)
+                screen.dirty_lines.add(screen.cur_y)
+        case "delete-backward":
+            if screen.buff.cur_x > 0:
+                cur_x_diff -= 1
+                screen.buff.delete_char(screen.buff.cur_x-1, screen.buff.cur_y)
+                screen.dirty_lines.add(screen.cur_y)
+        case "move-up":
+            cur_y_diff -= 1
+        case "move-down":
+            cur_y_diff += 1
+        case "move-left":
+            cur_x_diff -= 1
+        case "move-right":
+            cur_x_diff += 1
+        case "save-file":
+            # save file
+            result, result_msg = screen.buff.save()
+            if result:
+                screen.draw_status_message(result_msg, tone="message")
+            else:
+                screen.draw_status_message(result_msg, tone="auto")
+        case "quit":
+            state.ending = True
+        case _:
+            pass  # do nothing
     
-    screen.buff.add_newline(screen.buff.cur_x, screen.buff.cur_y)
-    cur_y_diff += 1 # TODO: Make this scroll nicer. Probs scroll function? Or cursor move function
-    cur_x_diff = -screen.cur_x - screen.scroll_x
-    for c in key_str:
-        screen.buff.insert_char(screen.buff.cur_x + cur_x_diff, screen.buff.cur_y, c)
-        cur_x_diff += 1
-    screen.dirty_lines.update(range(screen.cur_y, screen.height))
     if len(screen.dirty_lines) > 0:
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:
         # Move logical cursor and visual cursor together
         screen.move_cursor(cur_x_diff, cur_y_diff, relative=True)
-    return key_str == "q"
-    
 
-def main_loop(stdscr, file_path, state):    
+
+def main_loop(stdscr, file_path, state):
     curses.use_default_colors()
     curses.raw()
     stdscr.clear()
@@ -110,12 +160,7 @@ def main_loop(stdscr, file_path, state):
         curses.raw()
         if state.ending:
             return
-        try:
-            key_pressed = handle_input(stdscr, state, screen)
-            if key_pressed:
-                return
-        except Exception:
-            curses.noraw()
+        handle_input(stdscr, state, screen)
         if screen.message_shown:
             screen.message_shown = False
         else:
