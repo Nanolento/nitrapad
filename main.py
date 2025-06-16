@@ -8,6 +8,7 @@ from file import File
 
 TAB_WIDTH = 4
 
+
 class State:
     def __init__(self):
         self.file_path = "*NEW*"
@@ -44,16 +45,18 @@ def handle_input(stdscr, state, screen):
     cur_y_diff = 0
 
     key_ch = stdscr.get_wch()
-    if isinstance(key_ch, str): # most typing and keybinds
+    if isinstance(key_ch, str):  # most typing and keybinds
         ord_ch = ord(key_ch)
         if ord_ch == 27:
             key_str = "Esc"
             # Enable halfdelay mode, for detecting if Esc or Alt+X key combo.
             curses.halfdelay(1)
-            # no worries about setting this. The main loop will reset raw mode automatically.
+            # no worries about setting this. The main loop will reset
+            # raw mode automatically.
             just_esc = False
             try:
-                key_ch2 = stdscr.get_wch() # get second key but only wait a bit.
+                # get second key but only wait a bit, thanks to halfdelay.
+                key_ch2 = stdscr.get_wch()
             except curses.error:
                 # we got no input, just Esc.
                 just_esc = True
@@ -78,7 +81,7 @@ def handle_input(stdscr, state, screen):
             key_str = "char-type"
         else:
             key_str = f"UNK STR {repr(key_ch)}"
-    elif isinstance(key_ch, int): # special chars
+    elif isinstance(key_ch, int):  # special chars
         match key_ch:
             case curses.KEY_DOWN:
                 key_str = "ArrowDown"
@@ -100,13 +103,15 @@ def handle_input(stdscr, state, screen):
 
     match command:
         case "insert-char":
-            screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, key_ch)
+            screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y,
+                                    key_ch)
             cur_x_diff += 1
             screen.dirty_lines.add(screen.cur_y)
         case "insert-tab":
             width_needed = TAB_WIDTH - ((screen.buff.cur_x) % TAB_WIDTH)
             for i in range(width_needed):
-                screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y, " ")
+                screen.buff.insert_char(screen.buff.cur_x, screen.buff.cur_y,
+                                        " ")
             screen.dirty_lines.add(screen.cur_y)
             cur_x_diff += width_needed
         case "insert-newline":
@@ -140,8 +145,10 @@ def handle_input(stdscr, state, screen):
                 screen.buff.lines[y_pos-1] += current_line
                 del screen.buff.lines[y_pos]
                 cur_y_diff -= 1
-                cur_x_diff = len(screen.buff.lines[y_pos-1]) - len(current_line) - screen.buff.cur_x
-                screen.dirty_lines.update(range(max(0,screen.cur_y-1), screen.height-1))
+                cur_x_diff = len(screen.buff.lines[y_pos-1]) - \
+                    len(current_line) - screen.buff.cur_x
+                screen.dirty_lines.update(range(max(0, screen.cur_y-1),
+                                                screen.height-1))
         case "move-up":
             cur_y_diff -= 1
         case "move-down":
@@ -161,7 +168,7 @@ def handle_input(stdscr, state, screen):
             state.ending = True
         case _:
             pass  # do nothing
-    
+
     if len(screen.dirty_lines) > 0:
         screen.draw_screen()
     if cur_x_diff != 0 or cur_y_diff != 0:

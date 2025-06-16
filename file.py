@@ -1,5 +1,6 @@
 import os
 
+
 class File:
     def __init__(self, filepath):
         self.path = filepath
@@ -10,15 +11,20 @@ class File:
         Return buffer lines read from the file belonging to this File class.
         """
         if os.path.isfile(self.path):
+            # TODO: This code does not prevent binary files from loading.
+            # /usr/bin/ls loads fine and crashes Nitrapad.
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
                     buff = [line.rstrip("\r\n") for line in f.readlines()]
             except UnicodeDecodeError:
-                return False, "E1: This is most likely not a text file, since Unicode decoding failed!\n" + \
-                    "Nitrapad only supports UTF-8 encoded text files only (at least for now)."
+                return False, "E1: This is most likely not a text file, " + \
+                    "since Unicode decoding failed!\nNitrapad only " + \
+                    "supports UTF-8 encoded text files only " + \
+                    "(at least for now)."
             return buff, f"Loaded in file {self.path}"
         else:
-            return [""], "W1: specified file does not exist, will be created when saved"
+            return [""], "W1: specified file does not exist, " + \
+                "will be created when saved"
 
     def save(self, lines):
         """
@@ -31,6 +37,7 @@ class File:
             return True, f"Wrote to {self.path}"
         except OSError as e:
             if e.errno == 13:
-                return False, f"E2: Permission denied for writing to {self.path}"
+                return False, "E2: Permission denied for writing to " + \
+                    f"{self.path}"
             else:
                 return False, f"E3: Error while writing to file: {e}"
