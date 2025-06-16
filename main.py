@@ -113,10 +113,10 @@ def handle_input(stdscr, state, screen):
             screen.buff.add_newline(screen.buff.cur_x, screen.buff.cur_y)
             cur_y_diff += 1
             cur_x_diff = -screen.cur_x - screen.scroll_x
-            screen.dirty_lines.update(range(screen.cur_y, screen.height))
+            screen.dirty_lines.update(range(screen.cur_y, screen.height-1))
         case "delete-line":
-            # unimplemented.
-            screen.draw_status_message("Unimplemented 'delete-line'!", tone="warning")
+            del screen.buff.lines[screen.buff.cur_y]
+            screen.dirty_lines.update(range(screen.cur_y, screen.height-1))
         case "delete-forward":
             y_pos = screen.buff.cur_y
             if len(screen.buff.lines[y_pos]) > 0:
