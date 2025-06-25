@@ -118,10 +118,10 @@ def handle_input(stdscr, state, screen):
             screen.buff.add_newline(screen.buff.cur_x, screen.buff.cur_y)
             cur_y_diff += 1
             cur_x_diff = -screen.cur_x - screen.scroll_x
-            screen.dirty_lines.update(range(screen.cur_y, screen.height-1))
+            screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
         case "delete-line":
             del screen.buff.lines[screen.buff.cur_y]
-            screen.dirty_lines.update(range(screen.cur_y, screen.height-1))
+            screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
         case "delete-forward":
             y_pos = screen.buff.cur_y
             current_line = screen.buff.lines[y_pos]
@@ -129,7 +129,7 @@ def handle_input(stdscr, state, screen):
                 next_line = screen.buff.lines[y_pos+1]
                 del screen.buff.lines[y_pos+1]
                 screen.buff.lines[y_pos] += next_line
-                screen.dirty_lines.update(range(screen.cur_y, screen.height-1))
+                screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
             elif len(screen.buff.lines[y_pos]) > 0:
                 screen.buff.delete_char(screen.buff.cur_x, y_pos)
                 screen.dirty_lines.add(screen.cur_y)
@@ -147,8 +147,10 @@ def handle_input(stdscr, state, screen):
                 cur_y_diff -= 1
                 cur_x_diff = len(screen.buff.lines[y_pos-1]) - \
                     len(current_line) - screen.buff.cur_x
+                if screen.scroll_y + screen.edit_height >= len(screen.buff):
+                    screen.dirty_lines.update(range(screen.edit_height))
                 screen.dirty_lines.update(range(max(0, screen.cur_y-1),
-                                                screen.height-1))
+                                                screen.edit_height))
         case "move-up":
             cur_y_diff -= 1
         case "move-down":

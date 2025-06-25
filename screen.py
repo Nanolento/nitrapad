@@ -191,13 +191,15 @@ class Screen:
             lines_to_draw = self.dirty_lines
 
         for ln in lines_to_draw:
-            if ln <= len(self.buff) - 1:
+            if self.scroll_y + ln <= len(self.buff) - 1:
                 line = self.buff.lines[self.scroll_y + ln]
                 if len(line) > self.scroll_x:  # is the line on-screen at all?
                     self._draw_line(line, ln)
                 else:
                     self.curses_screen.move(ln, 0)
                     self.curses_screen.clrtoeol()  # Clear line
+            else:
+                self._draw_line("~", ln)
         self.dirty_lines = set()
         self.curses_screen.refresh()
 
