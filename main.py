@@ -120,12 +120,19 @@ def handle_input(stdscr, state, screen):
             cur_x_diff = -screen.cur_x - screen.scroll_x
             screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
         case "delete-line":
-            del screen.buff.lines[screen.buff.cur_y]
-            screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
+            if len(screen.buff) > 1:
+                del screen.buff.lines[screen.buff.cur_y]
+                screen.dirty_lines.update(range(screen.cur_y, screen.edit_height))
+                if screen.buff.cur_y >= len(screen.buff) - 1 and screen.buff.cur_y > 0:
+                    cur_y_diff -= 1
+            else:
+                cur_x_diff = -screen.buff.cur_x
+                screen.buff.lines[0] = ""
+                screen.dirty_lines.add(0)
         case "delete-forward":
             y_pos = screen.buff.cur_y
             current_line = screen.buff.lines[y_pos]
-            if screen.buff.cur_x == len(current_line):
+            if screen.buff.cur_x == len(current_line) and y_pos < len(screen.buff) - 1:
                 next_line = screen.buff.lines[y_pos+1]
                 del screen.buff.lines[y_pos+1]
                 screen.buff.lines[y_pos] += next_line
