@@ -1,6 +1,7 @@
 import curses
 
 from buffer import Buffer
+from input import get_keybind, resolve_keybind
 
 
 class Screen:
@@ -24,11 +25,17 @@ class Screen:
         self.dirty_lines = set()  # Lines that need redrawing on next draw
         self.message_shown = False  # if there is currently a status message.
 
+        self.input_mode = "edit" # Can be one of "edit", "prompt", "readonly" (last one is unimplemented for now)
+
         # Color setup
         # Error status
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
         # Warning status
         curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        # Prompt message
+        curses.init_pair(3, 227, 22)
+        # Prompt value
+        curses.init_pair(4, curses.COLOR_WHITE, 22)
 
         # self = passing ourselves as a screen, so buffer can raise messages
         if file:
@@ -59,6 +66,35 @@ class Screen:
             self._draw_line(message, self.height - 1, color=tone,
                             screen_space=True)
         self.message_shown = True
+
+    def prompt(self, prompt_msg=">"):
+        """
+        Make a prompt where the user can enter something and it returns as a value.
+        """
+        value = ""
+        self._draw_line(prompt_msg, self.height - 1, color="promptm", screen_space=True)
+        self.curses_screen.refresh()
+        while True:
+            curses.raw()
+            key_ch = self.curses_screen.get_wch()
+            key_str = get_keybind(key_ch, self.curses_screen)
+            command = resolve_keybind(key_str)
+
+            if not command:
+                continue
+            match command:
+                case "insert-char":
+                    value += key_ch
+                case "delete-backward":
+                    value = value[:-1]
+                case "insert-newline": # done, "ENTER"
+                    return value
+
+            # Draw it.
+            self._draw_line(value, self.height - 1, color="promptv", screen_space=True, start_x=len(prompt_msg)+1)
+            self.curses_screen.refresh()
+            
+            
 
     def draw_status(self):
         if self.buff.file:
@@ -203,14 +239,14 @@ class Screen:
         self.dirty_lines = set()
         self.curses_screen.refresh()
 
-    def _draw_line(self, line, screen_y, color="normal", screen_space=False):
+    def _draw_line(self, line, screen_y, color="normal", screen_space=False, start_x=0):
         """
         Draw a text line on the screen.
         screen_space: if True, ignore screen scrolling when rendering,
         otherwise adhere to it.
         """
-        cur_x = 0
-        self.curses_screen.move(screen_y, 0)
+        cur_x = start_x
+        self.curses_screen.move(screen_y, start_x)
         self.curses_screen.clrtoeol()
         if not screen_space:
             chars_to_draw = line.rstrip()[self.scroll_x:]
@@ -234,6 +270,12 @@ class Screen:
                     elif color == "warning":
                         self.curses_screen.addch(screen_y, cur_x,
                                                  char, curses.color_pair(2))
+                    elif color == "promptm":
+                        self.curses_screen.addch(screen_y, cur_x,
+                                                 char, curses.color_pair(3))
+                    elif color == "promptv":
+                        self.curses_screen.addch(screen_y, cur_x,
+                                                 char, curses.color_pair(4))
                     else:
                         self.curses_screen.addch(screen_y, cur_x,
                                                  char)
