@@ -43,6 +43,19 @@ class Screen:
         else:
             self.buff = Buffer(self)
 
+    def handle_resize(self):
+        """
+        When receiving a resize event, this function will handle it and resize
+        the screen accordingly so it doesn't crash when downsizing or not fully utilize
+        the available space when upsizing!
+        """
+        curses.update_lines_cols()
+        self.width = curses.COLS
+        self.height = curses.LINES
+        self.edit_height = self.height - 1
+        self.draw_screen(redraw=True)
+        self.draw_status_message("Terminal resize detected and adjusted.")
+
     def draw_status_message(self, message, tone="auto"):
         """
         Temporarily (until user presses a key, overwrite status line

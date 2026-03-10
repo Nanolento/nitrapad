@@ -76,6 +76,8 @@ def get_keybind(key_ch, stdscr):
                 key_str = "Backspace"
             case curses.KEY_DC:
                 key_str = "Delete"
+            case curses.KEY_RESIZE:
+                key_str = "RESIZE"
             case _:
                 key_str = f"UNK INT {key_ch}"
     return key_str

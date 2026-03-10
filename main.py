@@ -24,6 +24,11 @@ def handle_input(stdscr, state, screen):
 
     key_ch = stdscr.get_wch()
     key_str = get_keybind(key_ch, stdscr)
+
+    if key_str == "RESIZE":
+        screen.handle_resize()
+        return
+    
     command = resolve_keybind(key_str)
     if not command:
         screen.draw_status_message(f"Unbound key '{key_str}'.")
