@@ -1,4 +1,3 @@
-from main import Editor
 # This file contains the commands neot uses for its functionality. The default behaviors are programmed here.
 
 
@@ -9,7 +8,7 @@ class Command:
         self.name = name
         self.function = function
 
-    def execute(self, editor: Editor):
+    def execute(self, editor):
         self.function(editor)
 
 
@@ -17,7 +16,7 @@ class CommandRegistry:
     commands: dict
 
     def __init__(self):
-        commands = {}
+        self.commands = {}
 
     def register(self, command: Command):
         if command.name in self.commands:
@@ -51,16 +50,16 @@ class CommandRegistry:
 
 
 # Movement commands
-def move_left(editor: Editor):
+def move_left(editor):
     editor.screen.move_cursor(-1, 0)
 
-def move_right(editor: Editor):
+def move_right(editor):
     editor.screen.move_cursor(1, 0)
 
-def move_up(editor: Editor):
+def move_up(editor):
     editor.screen.move_cursor(0, -1)
 
-def move_down(editor: Editor):
+def move_down(editor):
     editor.screen.move_cursor(0, 1)
 
 move_left_cmd = Command("move-left", move_left)
