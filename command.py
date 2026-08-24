@@ -1,5 +1,6 @@
 # This file contains the commands neot uses for its functionality. The default behaviors are programmed here.
 
+TAB_WIDTH = 4
 
 class Command:
     name: str
@@ -66,3 +67,23 @@ move_left_cmd = Command("move-left", move_left)
 move_right_cmd = Command("move-right", move_right)
 move_up_cmd = Command("move-up", move_up)
 move_down_cmd = Command("move-down", move_down)
+
+# Insert commands
+def insert_tab(editor):
+    width_needed = TAB_WIDTH - ((editor.screen.buff.cur_x) % TAB_WIDTH)
+    for i in range(width_needed):
+        editor.screen.buff.insert_char(editor.screen.buff.cur_x, editor.screen.buff.cur_y,
+                                       " ")
+        editor.screen.dirty_lines.add(editor.screen.cur_y)
+    editor.screen.move_cursor(width_needed, 0)
+
+def insert_newline(editor):
+    editor.screen.buff.add_newline(editor.screen.buff.cur_x,
+                                   editor.screen.buff.cur_y)
+    cur_x_diff = -editor.screen.cur_x - editor.screen.scroll_x
+    editor.screen.dirty_lines.update(range(editor.screen.cur_y,
+                                           editor.screen.edit_height))
+    editor.screen.move_cursor(cur_x_diff, 1)
+
+insert_tab_cmd = Command("insert-tab", insert_tab)
+insert_newline_cmd = Command("insert-newline", insert_newline)

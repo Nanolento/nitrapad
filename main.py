@@ -62,22 +62,11 @@ def handle_input(state, editor: Editor):
     else:
         match command_str:
             case "insert-char":
+                # currently not replacable. will figure out new architecture for this later
                 editor.screen.buff.insert_char(editor.screen.buff.cur_x, editor.screen.buff.cur_y,
                                                key_ch)
                 cur_x_diff += 1
                 editor.screen.dirty_lines.add(editor.screen.cur_y)
-            case "insert-tab":
-                width_needed = TAB_WIDTH - ((editor.screen.buff.cur_x) % TAB_WIDTH)
-                for i in range(width_needed):
-                    editor.screen.buff.insert_char(editor.screen.buff.cur_x, editor.screen.buff.cur_y,
-                                                   " ")
-                    editor.screen.dirty_lines.add(editor.screen.cur_y)
-                    cur_x_diff += width_needed
-            case "insert-newline":
-                editor.screen.buff.add_newline(editor.screen.buff.cur_x, editor.screen.buff.cur_y)
-                cur_y_diff += 1
-                cur_x_diff = -editor.screen.cur_x - editor.screen.scroll_x
-                editor.screen.dirty_lines.update(range(editor.screen.cur_y, editor.screen.edit_height))
             case "delete-line":
                 if len(editor.screen.buff) > 1:
                     del editor.screen.buff.lines[editor.screen.buff.cur_y]
@@ -117,14 +106,6 @@ def handle_input(state, editor: Editor):
                         editor.screen.dirty_lines.update(range(editor.screen.edit_height))
                         editor.screen.dirty_lines.update(range(max(0, editor.screen.cur_y-1),
                                                                editor.screen.edit_height))
-            case "move-up":
-                cur_y_diff -= 1
-            case "move-down":
-                cur_y_diff += 1
-            case "move-left":
-                cur_x_diff -= 1
-            case "move-right":
-                cur_x_diff += 1
             case "save-file":
                 # save file
                 result, result_msg = editor.screen.buff.save()
@@ -160,6 +141,10 @@ def register_basic_commands(cmd_reg: command.CommandRegistry):
     cmd_reg.register(command.move_right_cmd)
     cmd_reg.register(command.move_up_cmd)
     cmd_reg.register(command.move_down_cmd)
+
+    # Insert commands
+    cmd_reg.register(command.insert_tab_cmd)
+    cmd_reg.register(command.insert_newline_cmd)
 
         
 def main_loop(stdscr, file_path, state):
