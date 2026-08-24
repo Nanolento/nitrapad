@@ -119,7 +119,7 @@ class Screen:
             f"C{self.buff.cur_x}"
         self._draw_line(status_str, self.height - 1, color="invert",
                         screen_space=True)
-        version_str = "Nitrapad INDEV"
+        version_str = "neot INDEV"
         self.curses_screen.addstr(self.height - 1,
                                   self.width - len(version_str) - 1,
                                   version_str, curses.A_REVERSE)

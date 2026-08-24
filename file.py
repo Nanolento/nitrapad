@@ -12,13 +12,13 @@ class File:
         """
         if os.path.isfile(self.path):
             # TODO: This code does not prevent binary files from loading.
-            # /usr/bin/ls loads fine and crashes Nitrapad.
+            # /usr/bin/ls loads fine and crashes neot.
             try:
                 with open(self.path, "r", encoding="utf-8") as f:
                     buff = [line.rstrip("\r\n") for line in f.readlines()]
             except UnicodeDecodeError:
                 return False, "E1: This is most likely not a text file, " + \
-                    "since Unicode decoding failed!\nNitrapad only " + \
+                    "since Unicode decoding failed!\nneot only " + \
                     "supports UTF-8 encoded text files only " + \
                     "(at least for now)."
             return buff, f"Loaded in file {self.path}"
