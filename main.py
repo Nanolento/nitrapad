@@ -6,6 +6,7 @@ import time
 from screen import Screen
 from file import File
 from input import get_keybind, resolve_keybind
+import command
 
 TAB_WIDTH = 4
 
@@ -16,6 +17,18 @@ class State:
         self.filename = "*NEW*"  # only basename, displayed in status line etc.
         self.mode = "normal"  # mode for interpreting input
         self.ending = False  # whether to quit the application yet.
+
+
+# This class contains everything the editor needs to function.
+class Editor:
+    screen: Screen
+
+
+def create_prompt(stdscr, x, y, width, message):
+    """
+    Creates a prompt screen, lets the user do something and then returns the value.
+    """
+    prompt_screen = Screen(len(message) + 1, curses.LINES-2, curses.COLS, stdscr, stype="prompt")
 
 
 def handle_input(stdscr, state, screen):
