@@ -67,16 +67,6 @@ def handle_input(state, editor: Editor):
                                                key_ch)
                 cur_x_diff += 1
                 editor.screen.dirty_lines.add(editor.screen.cur_y)
-            case "delete-line":
-                if len(editor.screen.buff) > 1:
-                    del editor.screen.buff.lines[editor.screen.buff.cur_y]
-                    editor.screen.dirty_lines.update(range(editor.screen.cur_y, editor.screen.edit_height))
-                    if editor.screen.buff.cur_y >= len(editor.screen.buff) - 1 and editor.screen.buff.cur_y > 0:
-                        cur_y_diff -= 1
-                    else:
-                        cur_x_diff = -editor.screen.buff.cur_x
-                        editor.screen.buff.lines[0] = ""
-                        editor.screen.dirty_lines.add(0)
             case "delete-forward":
                 y_pos = editor.screen.buff.cur_y
                 current_line = editor.screen.buff.lines[y_pos]
@@ -145,6 +135,9 @@ def register_basic_commands(cmd_reg: command.CommandRegistry):
     # Insert commands
     cmd_reg.register(command.insert_tab_cmd)
     cmd_reg.register(command.insert_newline_cmd)
+
+    # Deletion commands
+    cmd_reg.register(command.delete_line_cmd)
 
         
 def main_loop(stdscr, file_path, state):

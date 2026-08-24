@@ -87,3 +87,21 @@ def insert_newline(editor):
 
 insert_tab_cmd = Command("insert-tab", insert_tab)
 insert_newline_cmd = Command("insert-newline", insert_newline)
+
+# Deletion commands
+
+def delete_line(editor):
+    cur_y_diff = 0
+    cur_x_diff = 0
+    if len(editor.screen.buff) > 1:
+        del editor.screen.buff.lines[editor.screen.buff.cur_y]
+        editor.screen.dirty_lines.update(range(editor.screen.cur_y, editor.screen.edit_height))
+        if editor.screen.buff.cur_y >= len(editor.screen.buff) - 1 and editor.screen.buff.cur_y > 0:
+            cur_y_diff = 1
+    else:
+        cur_x_diff = -editor.screen.buff.cur_x
+        editor.screen.buff.lines[0] = ""
+        editor.screen.dirty_lines.add(0)
+    editor.screen.move_cursor(cur_x_diff, cur_y_diff)
+
+delete_line_cmd = Command("delete-line", delete_line)
